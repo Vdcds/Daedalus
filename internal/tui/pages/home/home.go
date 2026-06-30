@@ -5,6 +5,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type Home struct {
@@ -47,6 +49,16 @@ var (
 	subtitleStyle = lipgloss.NewStyle().
 			Faint(true)
 )
+
+func (h *Home) Update(msg tea.KeyMsg) {
+	switch msg.String() {
+	case "up":
+		h.Menu.MoveUp()
+
+	case "down":
+		h.Menu.MoveDown()
+	}
+}
 
 func (h *Home) View() string {
 	return lipgloss.JoinVertical(

@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"github.com/vdcds/Daedalus/internal/tui/pages"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -20,17 +18,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return a, tea.Quit
 
-		case "up":
-			switch a.currentPage {
-			case pages.Home:
-				a.home.Menu.MoveUp()
-			}
+		default:
+			a.home.Update(msg)
 
-		case "down":
-			switch a.currentPage {
-			case pages.Home:
-				a.home.Menu.MoveDown()
-			}
 		}
 	}
 
