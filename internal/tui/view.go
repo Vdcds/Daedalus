@@ -26,8 +26,8 @@ func (a *App) View() string {
 	)
 
 	return lipgloss.Place(
-		a.width,
-		a.height,
+		a.windowWidth,
+		a.windowHeight,
 		lipgloss.Center,
 		lipgloss.Center,
 		content,
