@@ -1,4 +1,3 @@
-// Package tui gives a tui for the thing
 package tui
 
 import (
@@ -7,6 +6,8 @@ import (
 	"github.com/vdcds/Daedalus/internal/tui/pages"
 	"github.com/vdcds/Daedalus/internal/tui/pages/home"
 	"github.com/vdcds/Daedalus/internal/tui/pages/packages"
+	"github.com/vdcds/Daedalus/internal/tui/theme"
+	"github.com/vdcds/Daedalus/internal/tui/themes/rosepine"
 )
 
 type App struct {
@@ -15,6 +16,8 @@ type App struct {
 
 	currentPage pages.Page
 
+	theme theme.Theme
+
 	home     *home.Home
 	packages *packages.Packages
 }
@@ -22,8 +25,11 @@ type App struct {
 func NewApp() *App {
 	return &App{
 		currentPage: pages.Home,
-		home:        home.New(),
-		packages:    packages.New(),
+
+		theme: rosepine.New(),
+
+		home:     home.New(),
+		packages: packages.New(),
 	}
 }
 
