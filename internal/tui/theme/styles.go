@@ -12,7 +12,12 @@ type Styles struct {
 	Selected lipgloss.Style
 	Normal   lipgloss.Style
 
-	Border  lipgloss.Style
+	Accent lipgloss.Style
+
+	Help lipgloss.Style
+
+	Border lipgloss.Style
+
 	Error   lipgloss.Style
 	Success lipgloss.Style
 }
@@ -21,7 +26,7 @@ func NewStyles(p Palette) Styles {
 	return Styles{
 		Title: lipgloss.NewStyle().
 			Bold(true).
-			Foreground(p.Rose),
+			Foreground(p.Iris),
 
 		Subtitle: lipgloss.NewStyle().
 			Foreground(p.Muted),
@@ -39,14 +44,24 @@ func NewStyles(p Palette) Styles {
 		Normal: lipgloss.NewStyle().
 			Foreground(p.Text),
 
+		Accent: lipgloss.NewStyle().
+			Foreground(p.Rose),
+
+		Help: lipgloss.NewStyle().
+			Faint(true).
+			Foreground(p.Muted),
+
 		Border: lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(p.Overlay),
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(p.Overlay).
+			Padding(0, 1),
 
 		Error: lipgloss.NewStyle().
+			Bold(true).
 			Foreground(p.Love),
 
 		Success: lipgloss.NewStyle().
+			Bold(true).
 			Foreground(p.Foam),
 	}
 }
