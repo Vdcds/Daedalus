@@ -8,7 +8,8 @@ import (
 )
 
 type Item struct {
-	Title string
+	Title       string
+	Description string
 }
 
 type Menu struct {
@@ -22,6 +23,22 @@ var (
 
 	normalStyle = lipgloss.NewStyle()
 )
+
+func (m *Menu) MoveDown() {
+	if m.Selected < len(m.Items)-1 {
+		m.Selected++
+	}
+}
+
+func (m *Menu) MoveUp() {
+	if m.Selected > 0 {
+		m.Selected--
+	}
+}
+
+func (m Menu) SelectedItem() Item {
+	return m.Items[m.Selected]
+}
 
 func (m Menu) View() string {
 	var lines []string

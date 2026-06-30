@@ -15,17 +15,32 @@ var (
 			Faint(true)
 )
 
-func View() string {
-	mainMenu := menu.Menu{
-		Items: []menu.Item{
-			{Title: "Packages"},
-			{Title: "Dotfiles"},
-			{Title: "Fonts"},
-			{Title: "Tweaks"},
-			{Title: "Settings"},
+var MainMenu = menu.Menu{
+	Items: []menu.Item{
+		{
+			Title:       "Packages",
+			Description: "Install CLI tools and GUI applications",
 		},
-	}
+		{
+			Title:       "Dotfiles",
+			Description: "Configure your development environment",
+		},
+		{
+			Title:       "Fonts",
+			Description: "Install Nerd Fonts",
+		},
+		{
+			Title:       "Tweaks",
+			Description: "Apply macOS system tweaks",
+		},
+		{
+			Title:       "Settings",
+			Description: "Configure Daedalus",
+		},
+	},
+}
 
+func View() string {
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 
@@ -37,6 +52,6 @@ func View() string {
 
 		"",
 
-		mainMenu.View(),
+		MainMenu.View(),
 	)
 }

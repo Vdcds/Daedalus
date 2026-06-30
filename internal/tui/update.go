@@ -1,6 +1,11 @@
 package tui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"github.com/vdcds/Daedalus/internal/tui/pages"
+	"github.com/vdcds/Daedalus/internal/tui/pages/home"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -10,9 +15,25 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.windowHeight = msg.Height
 
 	case tea.KeyMsg:
+
 		switch msg.String() {
+
 		case "q", "ctrl+c":
 			return a, tea.Quit
+
+		case "up":
+
+			switch a.currentPage {
+			case pages.Home:
+				home.MainMenu.MoveUp()
+			}
+
+		case "down":
+
+			switch a.currentPage {
+			case pages.Home:
+				home.MainMenu.MoveDown()
+			}
 		}
 	}
 
