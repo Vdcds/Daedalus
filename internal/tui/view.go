@@ -1,11 +1,9 @@
-// Package tui is a terminal-ui-parts toolkit
 package tui
 
 import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/tui/pages"
-	"github.com/vdcds/Daedalus/internal/tui/pages/home"
 )
 
 func (a *App) View() string {
@@ -14,7 +12,7 @@ func (a *App) View() string {
 	switch a.currentPage {
 
 	case pages.Home:
-		content = home.View()
+		content = a.home.View()
 
 	default:
 		content = "Unknown Page"

@@ -1,9 +1,11 @@
+// Package tui renders terminal UI
 package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/vdcds/Daedalus/internal/tui/pages"
+	"github.com/vdcds/Daedalus/internal/tui/pages/home"
 )
 
 type App struct {
@@ -11,11 +13,14 @@ type App struct {
 	windowHeight int
 
 	currentPage pages.Page
+
+	home *home.Home
 }
 
 func NewApp() *App {
 	return &App{
 		currentPage: pages.Home,
+		home:        home.New(),
 	}
 }
 

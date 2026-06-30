@@ -7,6 +7,39 @@ import (
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
 )
 
+type Home struct {
+	Menu menu.Menu
+}
+
+func New() *Home {
+	return &Home{
+		Menu: menu.Menu{
+			Items: []menu.Item{
+				{
+					Title:       "Packages",
+					Description: "Install CLI tools and GUI applications",
+				},
+				{
+					Title:       "Dotfiles",
+					Description: "Configure your development environment",
+				},
+				{
+					Title:       "Fonts",
+					Description: "Install Nerd Fonts",
+				},
+				{
+					Title:       "Tweaks",
+					Description: "Apply macOS system tweaks",
+				},
+				{
+					Title:       "Settings",
+					Description: "Configure Daedalus",
+				},
+			},
+		},
+	}
+}
+
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true)
@@ -15,32 +48,7 @@ var (
 			Faint(true)
 )
 
-var MainMenu = menu.Menu{
-	Items: []menu.Item{
-		{
-			Title:       "Packages",
-			Description: "Install CLI tools and GUI applications",
-		},
-		{
-			Title:       "Dotfiles",
-			Description: "Configure your development environment",
-		},
-		{
-			Title:       "Fonts",
-			Description: "Install Nerd Fonts",
-		},
-		{
-			Title:       "Tweaks",
-			Description: "Apply macOS system tweaks",
-		},
-		{
-			Title:       "Settings",
-			Description: "Configure Daedalus",
-		},
-	},
-}
-
-func View() string {
+func (h *Home) View() string {
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 
@@ -52,6 +60,6 @@ func View() string {
 
 		"",
 
-		MainMenu.View(),
+		h.Menu.View(),
 	)
 }
