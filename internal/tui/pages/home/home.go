@@ -1,7 +1,11 @@
-// Package home renders the Daedalus Home Screeen.
+// Package home renders the Daedalus home page.
 package home
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+
+	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+)
 
 var (
 	titleStyle = lipgloss.NewStyle().
@@ -12,6 +16,16 @@ var (
 )
 
 func View() string {
+	mainMenu := menu.Menu{
+		Items: []menu.Item{
+			{Title: "Packages"},
+			{Title: "Dotfiles"},
+			{Title: "Fonts"},
+			{Title: "Tweaks"},
+			{Title: "Settings"},
+		},
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 
@@ -23,6 +37,6 @@ func View() string {
 
 		"",
 
-		subtitleStyle.Render("(press q to quit)"),
+		mainMenu.View(),
 	)
 }
