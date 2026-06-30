@@ -14,9 +14,11 @@ func (a *App) View() string {
 	case pages.Home:
 		content = a.home.View()
 
+	case pages.Packages:
+		content = a.packages.View()
+
 	default:
 		content = "Unknown Page"
-
 	}
 
 	return lipgloss.Place(

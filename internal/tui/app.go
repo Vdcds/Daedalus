@@ -1,4 +1,4 @@
-// Package tui renders terminal UI
+// Package tui gives a tui for the thing
 package tui
 
 import (
@@ -6,6 +6,7 @@ import (
 
 	"github.com/vdcds/Daedalus/internal/tui/pages"
 	"github.com/vdcds/Daedalus/internal/tui/pages/home"
+	"github.com/vdcds/Daedalus/internal/tui/pages/packages"
 )
 
 type App struct {
@@ -14,13 +15,15 @@ type App struct {
 
 	currentPage pages.Page
 
-	home *home.Home
+	home     *home.Home
+	packages *packages.Packages
 }
 
 func NewApp() *App {
 	return &App{
 		currentPage: pages.Home,
 		home:        home.New(),
+		packages:    packages.New(),
 	}
 }
 
