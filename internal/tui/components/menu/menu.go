@@ -4,7 +4,7 @@ package menu
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Item struct {
@@ -17,11 +17,6 @@ type Menu struct {
 	Items    []Item
 	Selected int
 }
-
-var (
-	selectedStyle = lipgloss.NewStyle().Bold(true)
-	normalStyle   = lipgloss.NewStyle()
-)
 
 func (m *Menu) MoveUp() {
 	if m.Selected > 0 {
@@ -39,15 +34,21 @@ func (m Menu) SelectedItem() Item {
 	return m.Items[m.Selected]
 }
 
-func (m Menu) View() string {
+func (m Menu) View(t theme.Theme) string {
 	var lines []string
 
 	for i, item := range m.Items {
+
 		if i == m.Selected {
-			lines = append(lines, selectedStyle.Render("❯ "+item.Title))
+			lines = append(lines,
+				t.Styles.Selected.Render("❯ "+item.Title),
+			)
 		} else {
-			lines = append(lines, normalStyle.Render("  "+item.Title))
+			lines = append(lines,
+				t.Styles.Normal.Render("  "+item.Title),
+			)
 		}
+
 	}
 
 	return strings.Join(lines, "\n")

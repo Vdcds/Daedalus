@@ -12,7 +12,7 @@ func (a *App) View() string {
 	switch a.currentPage {
 
 	case pages.Home:
-		content = a.home.View()
+		content = a.home.View(a.theme)
 
 	case pages.Packages:
 		content = a.packages.View()

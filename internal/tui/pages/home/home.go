@@ -7,6 +7,7 @@ import (
 
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
 	"github.com/vdcds/Daedalus/internal/tui/pages"
+	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Home struct {
@@ -47,11 +48,6 @@ func New() *Home {
 	}
 }
 
-var (
-	titleStyle    = lipgloss.NewStyle().Bold(true)
-	subtitleStyle = lipgloss.NewStyle().Faint(true)
-)
-
 func (h *Home) Update(msg tea.KeyMsg) pages.Page {
 	switch msg.String() {
 
@@ -71,14 +67,18 @@ func (h *Home) Update(msg tea.KeyMsg) pages.Page {
 	return pages.Home
 }
 
-func (h *Home) View() string {
+func (h *Home) View(t theme.Theme) string {
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 
-		titleStyle.Render("🪽 Daedalus"),
+		t.Styles.Title.Render("🪽 Daedalus"),
+
 		"",
-		subtitleStyle.Render("Forge your macOS experience"),
+
+		t.Styles.Subtitle.Render("Forge your macOS experience"),
+
 		"",
-		h.Menu.View(),
+
+		h.Menu.View(t),
 	)
 }
