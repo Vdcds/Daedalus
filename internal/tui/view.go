@@ -1,29 +1,25 @@
+// Package tui is a terminal-ui-parts toolkit
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
 
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true)
-
-	subtitleStyle = lipgloss.NewStyle().
-			Faint(true)
+	"github.com/vdcds/Daedalus/internal/tui/pages"
+	"github.com/vdcds/Daedalus/internal/tui/pages/home"
 )
 
 func (a *App) View() string {
-	content := lipgloss.JoinVertical(
-		lipgloss.Center,
+	var content string
 
-		titleStyle.Render("🪽 Daedalus"),
+	switch a.currentPage {
 
-		"",
+	case pages.Home:
+		content = home.View()
 
-		subtitleStyle.Render("Forge your macOS experience"),
+	default:
+		content = "Unknown Page"
 
-		"",
-
-		subtitleStyle.Render("(press q to quit)"),
-	)
+	}
 
 	return lipgloss.Place(
 		a.windowWidth,
