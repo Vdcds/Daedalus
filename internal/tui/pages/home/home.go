@@ -6,18 +6,25 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
+	"github.com/vdcds/Daedalus/internal/tui/components/header"
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
 	"github.com/vdcds/Daedalus/internal/tui/pages"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Home struct {
+	Header *header.Header
 	Menu   menu.Menu
 	Footer *footer.Footer
 }
 
 func New() *Home {
 	return &Home{
+		Header: header.New(
+			"🪽 Daedalus",
+			"Forge your macOS experience",
+		),
+
 		Menu: menu.Menu{
 			Items: []menu.Item{
 				{
@@ -88,9 +95,7 @@ func (h *Home) View(t theme.Theme) string {
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 
-		t.Styles.Title.Render("🪽 Daedalus"),
-
-		t.Styles.Subtitle.Render("Forge your macOS experience"),
+		h.Header.View(t),
 
 		"",
 
