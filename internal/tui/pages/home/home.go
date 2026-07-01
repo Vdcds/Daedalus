@@ -5,13 +5,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
 	"github.com/vdcds/Daedalus/internal/tui/pages"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Home struct {
-	Menu menu.Menu
+	Menu   menu.Menu
+	Footer *footer.Footer
 }
 
 func New() *Home {
@@ -45,7 +47,22 @@ func New() *Home {
 				},
 			},
 		},
+		Footer: footer.New(
+			footer.Action{
+				Key:         "↑↓",
+				Description: "Navigate",
+			},
+			footer.Action{
+				Key:         "Enter",
+				Description: "Select",
+			},
+			footer.Action{
+				Key:         "Q",
+				Description: "Quit",
+			},
+		),
 	}
+
 }
 
 func (h *Home) Update(msg tea.KeyMsg) pages.Page {
@@ -80,5 +97,6 @@ func (h *Home) View(t theme.Theme) string {
 		"",
 
 		h.Menu.View(t),
+		h.Footer.View(t),
 	)
 }

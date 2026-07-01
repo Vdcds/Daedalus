@@ -49,7 +49,14 @@ func (m Menu) View(t theme.Theme) string {
 			)
 		}
 
+		if item.Description != "" {
+			lines = append(lines,
+				t.Styles.Muted.Render("    "+item.Description),
+			)
+		}
+
+		lines = append(lines, "")
 	}
 
-	return strings.Join(lines, "\n")
+	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
