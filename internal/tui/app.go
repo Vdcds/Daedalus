@@ -3,9 +3,9 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/vdcds/Daedalus/internal/tui/pages"
-	"github.com/vdcds/Daedalus/internal/tui/pages/home"
-	"github.com/vdcds/Daedalus/internal/tui/pages/packages"
+	"github.com/vdcds/Daedalus/internal/tui/screens"
+	"github.com/vdcds/Daedalus/internal/tui/screens/home"
+	"github.com/vdcds/Daedalus/internal/tui/screens/packages"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 	"github.com/vdcds/Daedalus/internal/tui/themes/rosepine"
 )
@@ -14,7 +14,7 @@ type App struct {
 	windowWidth  int
 	windowHeight int
 
-	currentPage pages.Page
+	currentScreen screens.Screen
 
 	theme theme.Theme
 
@@ -24,7 +24,7 @@ type App struct {
 
 func NewApp() *App {
 	return &App{
-		currentPage: pages.Home,
+		currentScreen: screens.Home,
 
 		theme: rosepine.New(),
 

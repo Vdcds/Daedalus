@@ -1,9 +1,9 @@
-package pages
+package screens
 
-type Page int
+type Screen int
 
 const (
-	Home Page = iota
+	Home Screen = iota
 	Packages
 	Dotfiles
 	Fonts

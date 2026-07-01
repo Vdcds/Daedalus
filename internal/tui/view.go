@@ -3,22 +3,22 @@ package tui
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/vdcds/Daedalus/internal/tui/pages"
+	"github.com/vdcds/Daedalus/internal/tui/screens"
 )
 
 func (a *App) View() string {
 	var content string
 
-	switch a.currentPage {
+	switch a.currentScreen {
 
-	case pages.Home:
+	case screens.Home:
 		content = a.home.View(a.theme)
 
-	case pages.Packages:
+	case screens.Packages:
 		content = a.packages.View()
 
 	default:
-		content = "Unknown Page"
+		content = "Unknown Screen"
 	}
 
 	return lipgloss.Place(

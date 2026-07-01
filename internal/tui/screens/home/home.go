@@ -1,4 +1,4 @@
-// Package home renders the Daedalus home screen.
+// Package home renders the Daedalus home page.
 package home
 
 import (
