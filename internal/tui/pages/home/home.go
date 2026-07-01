@@ -47,6 +47,7 @@ func New() *Home {
 				},
 			},
 		},
+
 		Footer: footer.New(
 			footer.Action{
 				Key:         "↑↓",
@@ -62,7 +63,6 @@ func New() *Home {
 			},
 		),
 	}
-
 }
 
 func (h *Home) Update(msg tea.KeyMsg) pages.Page {
@@ -86,17 +86,18 @@ func (h *Home) Update(msg tea.KeyMsg) pages.Page {
 
 func (h *Home) View(t theme.Theme) string {
 	return lipgloss.JoinVertical(
-		lipgloss.Center,
+		lipgloss.Left,
 
 		t.Styles.Title.Render("🪽 Daedalus"),
-
-		"",
 
 		t.Styles.Subtitle.Render("Forge your macOS experience"),
 
 		"",
 
 		h.Menu.View(t),
+
+		"",
+
 		h.Footer.View(t),
 	)
 }

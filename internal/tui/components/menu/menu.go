@@ -38,25 +38,29 @@ func (m Menu) View(t theme.Theme) string {
 	var lines []string
 
 	for i, item := range m.Items {
-
-		if i == m.Selected {
-			lines = append(lines,
-				t.Styles.Selected.Render("❯ "+item.Title),
-			)
-		} else {
-			lines = append(lines,
-				t.Styles.Normal.Render("  "+item.Title),
-			)
-		}
-
-		if item.Description != "" {
-			lines = append(lines,
-				t.Styles.Muted.Render("    "+item.Description),
-			)
-		}
-
-		lines = append(lines, "")
+		lines = append(lines, m.renderItem(item, i == m.Selected, t))
 	}
 
 	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func (m Menu) renderItem(item Item, selected bool, t theme.Theme) string {
+	var lines []string
+
+	title := "  " + item.Title
+	if selected {
+		title = "❯ " + item.Title
+		lines = append(lines, t.Styles.Selected.Render(title))
+	} else {
+		lines = append(lines, t.Styles.Normal.Render(title))
+	}
+
+	if item.Description != "" {
+		lines = append(
+			lines,
+			t.Styles.Muted.Render("    "+item.Description),
+		)
+	}
+
+	return strings.Join(lines, "\n")
 }
