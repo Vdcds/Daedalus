@@ -1,13 +1,13 @@
-// Package home renders the Daedalus home page.
+// Package home renders the Daedalus home screen.
 package home
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+	"github.com/vdcds/Daedalus/internal/tui/components/page"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
@@ -92,17 +92,9 @@ func (h *Home) Update(msg tea.KeyMsg) screens.Screen {
 }
 
 func (h *Home) View(t theme.Theme) string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-
+	return page.New(
 		h.Header.View(t),
-
-		"",
-
 		h.Menu.View(t),
-
-		"",
-
 		h.Footer.View(t),
-	)
+	).View()
 }
