@@ -6,8 +6,8 @@ import (
 
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
+	layout "github.com/vdcds/Daedalus/internal/tui/components/layout"
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
-	"github.com/vdcds/Daedalus/internal/tui/components/page"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
@@ -73,26 +73,22 @@ func New() *Packages {
 }
 
 func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
+	p.Menu.Update(msg)
+
 	switch msg.String() {
-
-	case "up":
-		p.Menu.MoveUp()
-
-	case "down":
-		p.Menu.MoveDown()
 
 	case "esc":
 		return screens.Home
 
 	case "enter":
-		// Category navigation comes later.
+		// Category navigation will be implemented later.
 	}
 
 	return screens.Packages
 }
 
 func (p *Packages) View(t theme.Theme) string {
-	return page.New(
+	return layout.New(
 		p.Header.View(t),
 		p.Menu.View(t),
 		p.Footer.View(t),

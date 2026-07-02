@@ -4,6 +4,8 @@ package menu
 import (
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
@@ -18,15 +20,18 @@ type Menu struct {
 	Selected int
 }
 
-func (m *Menu) MoveUp() {
-	if m.Selected > 0 {
-		m.Selected--
-	}
-}
+func (m *Menu) Update(msg tea.KeyMsg) {
+	switch msg.String() {
 
-func (m *Menu) MoveDown() {
-	if m.Selected < len(m.Items)-1 {
-		m.Selected++
+	case "up":
+		if m.Selected > 0 {
+			m.Selected--
+		}
+
+	case "down":
+		if m.Selected < len(m.Items)-1 {
+			m.Selected++
+		}
 	}
 }
 
@@ -48,6 +53,7 @@ func (m Menu) renderItem(item Item, selected bool, t theme.Theme) string {
 	var lines []string
 
 	title := "  " + item.Title
+
 	if selected {
 		title = "❯ " + item.Title
 		lines = append(lines, t.Styles.Selected.Render(title))

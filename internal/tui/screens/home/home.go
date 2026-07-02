@@ -6,8 +6,8 @@ import (
 
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
+	layout "github.com/vdcds/Daedalus/internal/tui/components/layout"
 	"github.com/vdcds/Daedalus/internal/tui/components/menu"
-	"github.com/vdcds/Daedalus/internal/tui/components/page"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
@@ -73,16 +73,13 @@ func New() *Home {
 }
 
 func (h *Home) Update(msg tea.KeyMsg) screens.Screen {
+	h.Menu.Update(msg)
+
 	switch msg.String() {
-
-	case "up":
-		h.Menu.MoveUp()
-
-	case "down":
-		h.Menu.MoveDown()
 
 	case "enter":
 		switch h.Menu.SelectedItem().ID {
+
 		case "packages":
 			return screens.Packages
 		}
@@ -92,7 +89,7 @@ func (h *Home) Update(msg tea.KeyMsg) screens.Screen {
 }
 
 func (h *Home) View(t theme.Theme) string {
-	return page.New(
+	return layout.New(
 		h.Header.View(t),
 		h.Menu.View(t),
 		h.Footer.View(t),
