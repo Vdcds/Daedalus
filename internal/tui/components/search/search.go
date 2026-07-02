@@ -10,6 +10,7 @@ import (
 )
 
 type Search struct {
+	Title       string
 	Placeholder string
 	Value       string
 	Focused     bool
