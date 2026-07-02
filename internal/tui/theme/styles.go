@@ -6,8 +6,9 @@ type Styles struct {
 	Title    lipgloss.Style
 	Subtitle lipgloss.Style
 
-	Text  lipgloss.Style
-	Muted lipgloss.Style
+	Text      lipgloss.Style
+	Muted     lipgloss.Style
+	Highlight lipgloss.Style
 
 	Selected lipgloss.Style
 	Normal   lipgloss.Style
@@ -63,5 +64,8 @@ func NewStyles(p Palette) Styles {
 		Success: lipgloss.NewStyle().
 			Bold(true).
 			Foreground(p.Foam),
+		Highlight: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(p.Highlight),
 	}
 }

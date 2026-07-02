@@ -14,8 +14,9 @@ type Palette struct {
 	Surface lipgloss.Color
 	Overlay lipgloss.Color
 
-	Text  lipgloss.Color
-	Muted lipgloss.Color
+	Text      lipgloss.Color
+	Muted     lipgloss.Color
+	Highlight lipgloss.Color
 
 	Love lipgloss.Color
 	Gold lipgloss.Color
