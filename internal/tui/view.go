@@ -15,7 +15,7 @@ func (a *App) View() string {
 		content = a.home.View(a.theme)
 
 	case screens.Packages:
-		content = a.packages.View()
+		content = a.packages.View(a.theme)
 
 	default:
 		content = "Unknown Screen"

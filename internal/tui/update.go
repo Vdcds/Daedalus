@@ -26,7 +26,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.currentScreen = a.home.Update(msg)
 
 		case screens.Packages:
-			// Packages screen update will come later.
+			a.currentScreen = a.packages.Update(msg)
 		}
 	}
 

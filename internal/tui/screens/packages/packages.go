@@ -1,33 +1,100 @@
-// Package packages renders the Packages page.
+// Package packages renders the packages screen.
 package packages
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/vdcds/Daedalus/internal/tui/components/footer"
+	"github.com/vdcds/Daedalus/internal/tui/components/header"
+	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+	"github.com/vdcds/Daedalus/internal/tui/components/page"
+	"github.com/vdcds/Daedalus/internal/tui/screens"
+	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
-var (
-	titleStyle    = lipgloss.NewStyle().Bold(true)
-	subtitleStyle = lipgloss.NewStyle().Faint(true)
-)
-
-type Packages struct{}
-
-func New() *Packages {
-	return &Packages{}
+type Packages struct {
+	Header *header.Header
+	Menu   menu.Menu
+	Footer *footer.Footer
 }
 
-func (p *Packages) View() string {
-	return lipgloss.JoinVertical(
-		lipgloss.Center,
+func New() *Packages {
+	return &Packages{
+		Header: header.New(
+			"📦 Packages",
+			"Browse package categories",
+		),
 
-		titleStyle.Render("📦 Packages"),
+		Menu: menu.Menu{
+			Items: []menu.Item{
+				{
+					ID:          "cli",
+					Title:       "CLI Tools",
+					Description: "Essential command-line utilities",
+				},
+				{
+					ID:          "editors",
+					Title:       "Editors",
+					Description: "Neovim, Zed, VS Code and more",
+				},
+				{
+					ID:          "browsers",
+					Title:       "Browsers",
+					Description: "Firefox, Zen, Brave, Chromium",
+				},
+				{
+					ID:          "development",
+					Title:       "Development",
+					Description: "Git, Docker, Node.js, Go",
+				},
+				{
+					ID:          "utilities",
+					Title:       "Utilities",
+					Description: "Everyday desktop applications",
+				},
+			},
+		},
 
-		"",
+		Footer: footer.New(
+			footer.Action{
+				Key:         "↑↓",
+				Description: "Navigate",
+			},
+			footer.Action{
+				Key:         "Enter",
+				Description: "Open",
+			},
+			footer.Action{
+				Key:         "Esc",
+				Description: "Back",
+			},
+		),
+	}
+}
 
-		subtitleStyle.Render("Package registry coming soon."),
+func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
+	switch msg.String() {
 
-		"",
+	case "up":
+		p.Menu.MoveUp()
 
-		subtitleStyle.Render("(press esc to go back)"),
-	)
+	case "down":
+		p.Menu.MoveDown()
+
+	case "esc":
+		return screens.Home
+
+	case "enter":
+		// Category navigation comes later.
+	}
+
+	return screens.Packages
+}
+
+func (p *Packages) View(t theme.Theme) string {
+	return page.New(
+		p.Header.View(t),
+		p.Menu.View(t),
+		p.Footer.View(t),
+	).View()
 }
