@@ -110,6 +110,13 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 func (p *Packages) View(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
 
+	selected := p.Menu.SelectedItem()
+
+	p.Preview.Title = selected.Title
+	p.Preview.Body = selected.Description
+	p.Preview.Meta = "Category"
+	p.Preview.Footer = "Press Enter to browse packages."
+
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
 
