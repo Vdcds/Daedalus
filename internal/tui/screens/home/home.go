@@ -7,14 +7,14 @@ import (
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
 	layout "github.com/vdcds/Daedalus/internal/tui/components/layout"
-	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+	list "github.com/vdcds/Daedalus/internal/tui/components/list"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Home struct {
 	Header *header.Header
-	Menu   menu.Menu
+	List   list.List
 	Footer *footer.Footer
 }
 
@@ -25,8 +25,8 @@ func New() *Home {
 			"Forge your macOS experience",
 		),
 
-		Menu: menu.Menu{
-			Items: []menu.Item{
+		List: list.List{
+			Items: []list.Item{
 				{
 					ID:          "packages",
 					Title:       "Packages",
@@ -73,12 +73,12 @@ func New() *Home {
 }
 
 func (h *Home) Update(msg tea.KeyMsg) screens.Screen {
-	h.Menu.Update(msg)
+	h.List.Update(msg)
 
 	switch msg.String() {
 
 	case "enter":
-		switch h.Menu.SelectedItem().ID {
+		switch h.List.SelectedItem().ID {
 
 		case "packages":
 			return screens.Packages
@@ -91,7 +91,7 @@ func (h *Home) Update(msg tea.KeyMsg) screens.Screen {
 func (h *Home) View(t theme.Theme) string {
 	return layout.New(
 		h.Header.View(t),
-		h.Menu.View(t),
+		h.List.View(t),
 		h.Footer.View(t),
 	).View()
 }

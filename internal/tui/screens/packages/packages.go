@@ -2,15 +2,18 @@
 package packages
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/vdcds/Daedalus/internal/catalog"
+
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
 	layout "github.com/vdcds/Daedalus/internal/tui/components/layout"
-	"github.com/vdcds/Daedalus/internal/tui/components/menu"
+	list "github.com/vdcds/Daedalus/internal/tui/components/list"
 	"github.com/vdcds/Daedalus/internal/tui/components/preview"
 	"github.com/vdcds/Daedalus/internal/tui/components/search"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
@@ -18,11 +21,25 @@ import (
 )
 
 type Packages struct {
-	Header  *header.Header
-	Search  *search.Search
-	Menu    menu.Menu
-	Preview *preview.Preview
-	Footer  *footer.Footer
+	Header       *header.Header
+	Search       *search.Search
+	CategoryList list.List
+	Preview      *preview.Preview
+	Footer       *footer.Footer
+}
+
+func menuItems() []list.Item {
+	items := make([]list.Item, 0, len(catalog.Categories))
+
+	for _, category := range catalog.Categories {
+		items = append(items, list.Item{
+			ID:          category.ID,
+			Title:       category.Name,
+			Description: category.Description,
+		})
+	}
+
+	return items
 }
 
 func New() *Packages {
@@ -37,41 +54,15 @@ func New() *Packages {
 
 		Search: s,
 
-		Menu: menu.Menu{
-			Items: []menu.Item{
-				{
-					ID:          "cli",
-					Title:       "CLI Tools",
-					Description: "Core terminal utilities",
-				},
-				{
-					ID:          "editors",
-					Title:       "Editors",
-					Description: "Code editors & IDEs",
-				},
-				{
-					ID:          "browsers",
-					Title:       "Browsers",
-					Description: "Firefox, Zen, Chromium...",
-				},
-				{
-					ID:          "development",
-					Title:       "Development",
-					Description: "Git, Docker, Go, Node.js",
-				},
-				{
-					ID:          "utilities",
-					Title:       "Utilities",
-					Description: "Everyday applications",
-				},
-			},
+		CategoryList: list.List{
+			Items: menuItems(),
 		},
 
 		Preview: preview.New(
-			"Welcome",
-			"Select a category.",
 			"",
-			"Package information will appear here.",
+			"",
+			"",
+			"",
 		),
 
 		Footer: footer.New(
@@ -93,7 +84,7 @@ func New() *Packages {
 
 func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 	p.Search.Update(msg)
-	p.Menu.Update(msg)
+	p.CategoryList.Update(msg)
 
 	switch msg.String() {
 
@@ -101,7 +92,7 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 		return screens.Home
 
 	case "enter":
-		// Coming soon.
+		// Category navigation comes later.
 	}
 
 	return screens.Packages
@@ -110,11 +101,14 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 func (p *Packages) View(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
 
-	selected := p.Menu.SelectedItem()
+	selected := catalog.Categories[p.CategoryList.Selected]
 
-	p.Preview.Title = selected.Title
+	p.Preview.Title = selected.Name
 	p.Preview.Body = selected.Description
-	p.Preview.Meta = "Category"
+	p.Preview.Meta = fmt.Sprintf(
+		"%d packages",
+		len(selected.Packages),
+	)
 	p.Preview.Footer = "Press Enter to browse packages."
 
 	left := lipgloss.JoinVertical(
@@ -123,7 +117,7 @@ func (p *Packages) View(t theme.Theme) string {
 		t.Styles.Highlight.Render("Categories"),
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
-		p.Menu.View(t),
+		p.CategoryList.View(t),
 	)
 
 	right := lipgloss.JoinVertical(

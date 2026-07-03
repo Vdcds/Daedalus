@@ -1,5 +1,5 @@
-// Package menu provides a reusable selectable menu component.
-package menu
+// Package list provides a reusable selectable list component.
+package list
 
 import (
 	"strings"
@@ -15,12 +15,12 @@ type Item struct {
 	Description string
 }
 
-type Menu struct {
+type List struct {
 	Items    []Item
 	Selected int
 }
 
-func (m *Menu) Update(msg tea.KeyMsg) {
+func (m *List) Update(msg tea.KeyMsg) {
 	switch msg.String() {
 
 	case "up":
@@ -35,11 +35,11 @@ func (m *Menu) Update(msg tea.KeyMsg) {
 	}
 }
 
-func (m Menu) SelectedItem() Item {
+func (m List) SelectedItem() Item {
 	return m.Items[m.Selected]
 }
 
-func (m Menu) View(t theme.Theme) string {
+func (m List) View(t theme.Theme) string {
 	var out []string
 
 	for i, item := range m.Items {
