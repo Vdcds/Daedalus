@@ -9,8 +9,9 @@ func New() theme.Theme {
 		Surface: "#1f1d2e",
 		Overlay: "#26233a",
 
-		Text:  "#e0def4",
-		Muted: "#908caa",
+		Text:      "#e0def4",
+		Muted:     "#908caa",
+		Highlight: "#f6c177",
 
 		Love: "#eb6f92",
 		Gold: "#f6c177",

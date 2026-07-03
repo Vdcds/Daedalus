@@ -1,38 +1,50 @@
-// Package header provides a reusable page header.
+// Package header provides a compact breadcrumb-style page header.
 package header
 
 import (
-	"strings"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
+// Header renders a single-line title · subtitle breadcrumb
+// with optional right-aligned content.
 type Header struct {
 	Title    string
 	Subtitle string
+	Right    string
 }
 
 func New(title, subtitle string) *Header {
-	return &Header{
-		Title:    title,
-		Subtitle: subtitle,
-	}
+	return &Header{Title: title, Subtitle: subtitle}
+}
+
+func (h *Header) SetRight(content string) {
+	h.Right = content
 }
 
 func (h *Header) View(t theme.Theme) string {
-	var lines []string
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(t.Palette.Iris).
+		Render(h.Title)
 
-	if h.Title != "" {
-		lines = append(lines,
-			t.Styles.Title.Render(h.Title),
-		)
-	}
-
+	line := title
 	if h.Subtitle != "" {
-		lines = append(lines,
-			t.Styles.Subtitle.Render(h.Subtitle),
-		)
+		sep := lipgloss.NewStyle().Foreground(t.Palette.Overlay).Render(" · ")
+		sub := lipgloss.NewStyle().Foreground(t.Palette.Muted).Render(h.Subtitle)
+		line = title + sep + sub
 	}
 
-	return strings.Join(lines, "\n")
+	if h.Right == "" {
+		return line
+	}
+
+	leftW := 56
+	rightW := 30
+
+	left := lipgloss.NewStyle().Width(leftW).Render(line)
+	right := lipgloss.NewStyle().Width(rightW).Align(lipgloss.Right).Render(h.Right)
+
+	return lipgloss.JoinHorizontal(lipgloss.Center, left, right)
 }
