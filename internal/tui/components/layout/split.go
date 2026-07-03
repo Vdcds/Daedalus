@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
 type Split struct {
@@ -24,7 +26,7 @@ func NewSplit(left, right string) *Split {
 	}
 }
 
-func (s *Split) View() string {
+func (s *Split) View(t theme.Theme) string {
 	left := strings.Split(s.Left, "\n")
 	right := strings.Split(s.Right, "\n")
 
@@ -43,6 +45,8 @@ func (s *Split) View() string {
 
 	var rows []string
 
+	divider := t.Styles.Muted.Render("│")
+
 	for i := 0; i < height; i++ {
 		l := lipgloss.NewStyle().
 			Width(s.LeftWidth).
@@ -52,7 +56,7 @@ func (s *Split) View() string {
 			Width(s.RightWidth).
 			Render(right[i])
 
-		rows = append(rows, l+" │ "+r)
+		rows = append(rows, l+" "+divider+" "+r)
 	}
 
 	return strings.Join(rows, "\n")

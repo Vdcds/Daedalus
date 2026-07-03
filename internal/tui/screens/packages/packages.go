@@ -138,7 +138,7 @@ func (p *Packages) View(t theme.Theme) string {
 	body := layout.NewSplit(
 		left,
 		right,
-	).View()
+	).View(t)
 
 	return layout.New(
 		p.Header.View(t),

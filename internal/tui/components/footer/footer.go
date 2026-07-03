@@ -25,22 +25,27 @@ func New(actions ...Action) *Footer {
 }
 
 func (f *Footer) View(t theme.Theme) string {
-	var parts []string
+	divider := t.Styles.Muted.Render(
+		strings.Repeat("─", 92),
+	)
 
-	for _, a := range f.Actions {
-		key := lipgloss.NewStyle().
-			Foreground(t.Palette.Pine).
-			Bold(true).
-			Render(a.Key)
-		desc := lipgloss.NewStyle().
-			Foreground(t.Palette.Muted).
-			Render(" " + a.Description)
-		parts = append(parts, key+desc)
+	var actions []string
+
+	for _, action := range f.Actions {
+		actions = append(
+			actions,
+			t.Styles.Highlight.Render(action.Key)+" "+
+				t.Styles.Muted.Render(action.Description),
+		)
 	}
 
-	sep := lipgloss.NewStyle().
-		Foreground(t.Palette.Overlay).
-		Render("  ·  ")
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
 
-	return strings.Join(parts, sep)
+		divider,
+
+		"",
+
+		strings.Join(actions, "   ·   "),
+	)
 }
