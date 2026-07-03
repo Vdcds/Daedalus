@@ -1,12 +1,20 @@
-// Package layout provides the application layout frame.
+// Package layout provides application-wide layout primitives.
 package layout
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
 
-// MaxWidth is the outer width of the layout content area (excluding margins).
-const MaxWidth = 92
+	"github.com/charmbracelet/lipgloss"
+)
 
-// Layout is a vertical stack of header, body, and footer.
+const (
+	MaxWidth          = 96
+	HorizontalPadding = 2
+	VerticalPadding   = 1
+
+	SectionSpacing = 1
+)
+
 type Layout struct {
 	Header string
 	Body   string
@@ -14,27 +22,33 @@ type Layout struct {
 }
 
 func New(header, body, footer string) *Layout {
-	return &Layout{Header: header, Body: body, Footer: footer}
+	return &Layout{
+		Header: header,
+		Body:   body,
+		Footer: footer,
+	}
 }
 
 func (l *Layout) View() string {
-	header := lipgloss.NewStyle().
-		MarginBottom(1).
-		Render(l.Header)
-
-	body := lipgloss.NewStyle().
-		MarginBottom(1).
-		Render(l.Body)
-
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
-		header,
-		body,
+
+		l.Header,
+
+		strings.Repeat("\n", SectionSpacing),
+
+		l.Body,
+
+		strings.Repeat("\n", SectionSpacing),
+
 		l.Footer,
 	)
 
 	return lipgloss.NewStyle().
 		Width(MaxWidth).
-		Padding(1, 2).
+		Padding(
+			VerticalPadding,
+			HorizontalPadding,
+		).
 		Render(content)
 }
