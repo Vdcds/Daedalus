@@ -2,6 +2,8 @@
 package packages
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -67,7 +69,7 @@ func New() *Packages {
 
 		Preview: preview.New(
 			"Welcome",
-			"Select a category to begin browsing.",
+			"Select a category.",
 			"",
 			"Package information will appear here.",
 		),
@@ -99,7 +101,7 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 		return screens.Home
 
 	case "enter":
-		// Category navigation later.
+		// Coming soon.
 	}
 
 	return screens.Packages
@@ -110,14 +112,18 @@ func (p *Packages) View(t theme.Theme) string {
 
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
+
 		t.Styles.Highlight.Render("Categories"),
+		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
 		p.Menu.View(t),
 	)
 
 	right := lipgloss.JoinVertical(
 		lipgloss.Left,
+
 		t.Styles.Highlight.Render("Preview"),
+		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
 		p.Preview.View(t),
 	)

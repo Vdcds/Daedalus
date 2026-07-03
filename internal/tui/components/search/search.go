@@ -39,21 +39,21 @@ func (s *Search) Update(msg tea.KeyMsg) {
 }
 
 func (s *Search) View(t theme.Theme) string {
-	prefix := lipgloss.NewStyle().
-		Foreground(t.Palette.Pine).
-		Bold(true).
-		Render("/")
-
 	value := s.Value
+
 	if value == "" {
-		value = lipgloss.NewStyle().
-			Foreground(t.Palette.Overlay).
-			Render(s.Placeholder)
-	} else {
-		value = lipgloss.NewStyle().
-			Foreground(t.Palette.Text).
-			Render(value)
+		value = t.Styles.Muted.Render("Search packages...")
 	}
 
-	return prefix + " " + value
+	prefix := t.Styles.Highlight.Render("/")
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+
+		prefix,
+
+		" ",
+
+		value,
+	)
 }

@@ -1,7 +1,11 @@
 // Package layout provides reusable layout primitives.
 package layout
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 type Split struct {
 	Left  string
@@ -9,8 +13,6 @@ type Split struct {
 
 	LeftWidth  int
 	RightWidth int
-
-	Gap int
 }
 
 func NewSplit(left, right string) *Split {
@@ -18,28 +20,40 @@ func NewSplit(left, right string) *Split {
 		Left:       left,
 		Right:      right,
 		LeftWidth:  30,
-		RightWidth: 62,
-		Gap:        4,
+		RightWidth: 61,
 	}
 }
 
 func (s *Split) View() string {
-	left := lipgloss.NewStyle().
-		Width(s.LeftWidth).
-		Render(s.Left)
+	left := strings.Split(s.Left, "\n")
+	right := strings.Split(s.Right, "\n")
 
-	right := lipgloss.NewStyle().
-		Width(s.RightWidth).
-		Render(s.Right)
+	height := len(left)
+	if len(right) > height {
+		height = len(right)
+	}
 
-	gap := lipgloss.NewStyle().
-		Width(s.Gap).
-		Render("")
+	for len(left) < height {
+		left = append(left, "")
+	}
 
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		left,
-		gap,
-		right,
-	)
+	for len(right) < height {
+		right = append(right, "")
+	}
+
+	var rows []string
+
+	for i := 0; i < height; i++ {
+		l := lipgloss.NewStyle().
+			Width(s.LeftWidth).
+			Render(left[i])
+
+		r := lipgloss.NewStyle().
+			Width(s.RightWidth).
+			Render(right[i])
+
+		rows = append(rows, l+" │ "+r)
+	}
+
+	return strings.Join(rows, "\n")
 }
