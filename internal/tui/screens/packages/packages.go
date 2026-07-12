@@ -67,6 +67,26 @@ func packageItems(category catalog.Category) []list.Item {
 	return items
 }
 
+func paneHeading(
+	title string,
+	focused bool,
+	t theme.Theme,
+) string {
+	titleStyle := t.Styles.Muted
+	dividerStyle := t.Styles.Muted
+
+	if focused {
+		titleStyle = t.Styles.Highlight
+		dividerStyle = t.Styles.Highlight
+	}
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		titleStyle.Render(title),
+		dividerStyle.Render(strings.Repeat("─", 18)),
+	)
+}
+
 func New() *Packages {
 	s := search.New("Search packages...")
 	s.Focus()
@@ -171,23 +191,29 @@ func (p *Packages) View(t theme.Theme) string {
 
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
-		t.Styles.Highlight.Render("Categories"),
-		t.Styles.Muted.Render(strings.Repeat("─", 18)),
+		paneHeading(
+			"Categories",
+			p.FocusedPane == CategoryPane,
+			t,
+		),
 		"",
 		p.CategoryList.View(t),
 	)
 
 	middle := lipgloss.JoinVertical(
 		lipgloss.Left,
-		t.Styles.Highlight.Render("Packages"),
-		t.Styles.Muted.Render(strings.Repeat("─", 18)),
+		paneHeading(
+			"Packages",
+			p.FocusedPane == PackagePane,
+			t,
+		),
 		"",
 		p.PackageList.View(t),
 	)
 
 	right := lipgloss.JoinVertical(
 		lipgloss.Left,
-		t.Styles.Highlight.Render("Preview"),
+		t.Styles.Muted.Render("Preview"),
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
 		p.Preview.View(t),
