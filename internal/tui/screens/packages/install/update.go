@@ -9,7 +9,10 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 
 	case lineMsg:
 		if msg.Line != "" {
-			m.Lines = append(m.Lines, msg.Line)
+			m.Lines = append(
+				m.Lines,
+				msg.Line,
+			)
 
 			const maxLines = 12
 
@@ -24,8 +27,8 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		m.Completed = append(
 			m.Completed,
 			PackageResult{
-				Name: msg.Package,
-				Err:  msg.Err,
+				Job: msg.Job,
+				Err: msg.Err,
 			},
 		)
 

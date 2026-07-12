@@ -12,13 +12,18 @@ import (
 	"github.com/vdcds/Daedalus/internal/installer"
 )
 
+type Job struct {
+	Name     string
+	BrewName string
+}
+
 type lineMsg struct {
 	Line string
 }
 
 type packageFinishedMsg struct {
-	Package string
-	Err     error
+	Job Job
+	Err error
 }
 
 type readyMsg struct{}
@@ -28,15 +33,15 @@ type FinishedMsg struct {
 }
 
 type PackageResult struct {
-	Name string
-	Err  error
+	Job Job
+	Err error
 }
 
 type Model struct {
 	Spinner spinner.Model
 	Lines   []string
 
-	Packages  []string
+	Jobs      []Job
 	Current   int
 	Completed []PackageResult
 
@@ -59,10 +64,10 @@ func New() *Model {
 
 func (m *Model) Start(
 	runner installer.Runner,
-	packages []string,
+	jobs []Job,
 ) tea.Cmd {
 	m.runner = runner
-	m.Packages = append([]string(nil), packages...)
+	m.Jobs = append([]Job(nil), jobs...)
 	m.Current = 0
 	m.Completed = nil
 	m.Lines = nil
@@ -71,18 +76,21 @@ func (m *Model) Start(
 }
 
 func (m *Model) startCurrent() tea.Cmd {
-	if m.Current >= len(m.Packages) {
+	if m.Current >= len(m.Jobs) {
 		return m.finish()
 	}
 
-	pkg := m.Packages[m.Current]
+	job := m.Jobs[m.Current]
 
 	return func() tea.Msg {
-		process, err := m.runner.Start([]string{pkg})
+		process, err := m.runner.Start(
+			[]string{job.BrewName},
+		)
+
 		if err != nil {
 			return packageFinishedMsg{
-				Package: pkg,
-				Err:     err,
+				Job: job,
+				Err: err,
 			}
 		}
 
@@ -100,8 +108,17 @@ func (m *Model) readProcess(process installer.Process) {
 
 	wg.Add(2)
 
-	go scan(&wg, process.Stdout(), m.lines)
-	go scan(&wg, process.Stderr(), m.lines)
+	go scan(
+		&wg,
+		process.Stdout(),
+		m.lines,
+	)
+
+	go scan(
+		&wg,
+		process.Stderr(),
+		m.lines,
+	)
 
 	go func() {
 		wg.Wait()
@@ -130,7 +147,7 @@ func scan(
 }
 
 func (m *Model) waitForOutput() tea.Cmd {
-	pkg := m.Packages[m.Current]
+	job := m.Jobs[m.Current]
 
 	return func() tea.Msg {
 		line, ok := <-m.lines
@@ -142,27 +159,27 @@ func (m *Model) waitForOutput() tea.Cmd {
 		}
 
 		return packageFinishedMsg{
-			Package: pkg,
-			Err:     <-m.done,
+			Job: job,
+			Err: <-m.done,
 		}
 	}
 }
 
 func (m *Model) finish() tea.Cmd {
 	return func() tea.Msg {
-		var failed []string
+		failed := 0
 
 		for _, result := range m.Completed {
 			if result.Err != nil {
-				failed = append(failed, result.Name)
+				failed++
 			}
 		}
 
-		if len(failed) > 0 {
+		if failed > 0 {
 			return FinishedMsg{
 				Err: fmt.Errorf(
 					"%d package(s) failed to install",
-					len(failed),
+					failed,
 				),
 			}
 		}

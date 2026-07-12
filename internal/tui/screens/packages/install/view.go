@@ -12,13 +12,15 @@ import (
 func (m *Model) View(t theme.Theme) string {
 	currentPackage := "Preparing installation"
 
-	if m.Current < len(m.Packages) {
-		currentPackage = m.Packages[m.Current]
+	if m.Current < len(m.Jobs) {
+		currentPackage = m.Jobs[m.Current].Name
 	}
 
 	status := lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		t.Styles.Highlight.Render(m.Spinner.View()),
+		t.Styles.Highlight.Render(
+			m.Spinner.View(),
+		),
 		" ",
 		t.Styles.Title.Render(
 			fmt.Sprintf(
@@ -32,7 +34,7 @@ func (m *Model) View(t theme.Theme) string {
 		fmt.Sprintf(
 			"%d of %d packages completed",
 			len(m.Completed),
-			len(m.Packages),
+			len(m.Jobs),
 		),
 	)
 
@@ -41,7 +43,10 @@ func (m *Model) View(t theme.Theme) string {
 	logs := "Waiting for Homebrew output..."
 
 	if len(m.Lines) > 0 {
-		logs = strings.Join(m.Lines, "\n")
+		logs = strings.Join(
+			m.Lines,
+			"\n",
+		)
 	}
 
 	return lipgloss.JoinVertical(
@@ -51,13 +56,17 @@ func (m *Model) View(t theme.Theme) string {
 		"",
 		results,
 		"",
-		t.Styles.Muted.Render(strings.Repeat("─", 72)),
+		t.Styles.Muted.Render(
+			strings.Repeat("─", 72),
+		),
 		"",
 		t.Styles.Normal.Render(logs),
 	)
 }
 
-func (m *Model) resultsView(t theme.Theme) string {
+func (m *Model) resultsView(
+	t theme.Theme,
+) string {
 	if len(m.Completed) == 0 {
 		return t.Styles.Muted.Render(
 			"No packages completed yet.",
@@ -71,7 +80,9 @@ func (m *Model) resultsView(t theme.Theme) string {
 			rows = append(
 				rows,
 				t.Styles.Muted.Render("✗")+" "+
-					t.Styles.Normal.Render(result.Name),
+					t.Styles.Normal.Render(
+						result.Job.Name,
+					),
 			)
 
 			continue
@@ -80,7 +91,9 @@ func (m *Model) resultsView(t theme.Theme) string {
 		rows = append(
 			rows,
 			t.Styles.Highlight.Render("✓")+" "+
-				t.Styles.Normal.Render(result.Name),
+				t.Styles.Normal.Render(
+					result.Job.Name,
+				),
 		)
 	}
 
