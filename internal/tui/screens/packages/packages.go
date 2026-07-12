@@ -18,6 +18,7 @@ import (
 	"github.com/vdcds/Daedalus/internal/tui/components/preview"
 	"github.com/vdcds/Daedalus/internal/tui/components/search"
 	"github.com/vdcds/Daedalus/internal/tui/screens"
+	"github.com/vdcds/Daedalus/internal/tui/screens/packages/install"
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
@@ -37,10 +38,6 @@ const (
 	ResultMode
 )
 
-type installFinishedMsg struct {
-	Result installer.Result
-}
-
 type Packages struct {
 	Header *header.Header
 	Search *search.Search
@@ -52,12 +49,12 @@ type Packages struct {
 	Selected map[string]bool
 	Mode     Mode
 
-	InstallResult installer.Result
+	Install    *install.Model
+	InstallErr error
+	Installer  installer.Runner
 
 	Preview *preview.Preview
 	Footer  *footer.Footer
-
-	Installer installer.Runner
 }
 
 func menuItems() []list.Item {
@@ -142,6 +139,9 @@ func New() *Packages {
 		Selected: selected,
 		Mode:     BrowseMode,
 
+		Install:   install.New(),
+		Installer: installer.NewHomebrew(),
+
 		Preview: preview.New(
 			"",
 			"",
@@ -171,21 +171,26 @@ func New() *Packages {
 				Description: "Back",
 			},
 		),
-
-		Installer: installer.NewHomebrew(),
 	}
 }
 
 func (p *Packages) Update(msg tea.Msg) (screens.Screen, tea.Cmd) {
 	switch msg := msg.(type) {
-	case installFinishedMsg:
-		p.InstallResult = msg.Result
+	case install.FinishedMsg:
+		p.InstallErr = msg.Err
 		p.Mode = ResultMode
 
 		return screens.Packages, nil
+	}
 
-	case tea.KeyMsg:
-		return p.updateKey(msg)
+	if p.Mode == InstallingMode {
+		cmd := p.Install.Update(msg)
+
+		return screens.Packages, cmd
+	}
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		return p.updateKey(keyMsg)
 	}
 
 	return screens.Packages, nil
@@ -197,9 +202,6 @@ func (p *Packages) updateKey(
 	switch p.Mode {
 	case ConfirmMode:
 		return p.updateConfirm(msg)
-
-	case InstallingMode:
-		return screens.Packages, nil
 
 	case ResultMode:
 		return p.updateResult(msg)
@@ -269,10 +271,18 @@ func (p *Packages) updateConfirm(
 
 	case "enter":
 		p.Mode = InstallingMode
+		p.Install = install.New()
+		p.InstallErr = nil
 
 		packages := p.selectedBrewNames()
 
-		return screens.Packages, p.install(packages)
+		return screens.Packages, tea.Batch(
+			p.Install.Spinner.Tick,
+			p.Install.Start(
+				p.Installer,
+				packages,
+			),
+		)
 	}
 
 	return screens.Packages, nil
@@ -283,7 +293,7 @@ func (p *Packages) updateResult(
 ) (screens.Screen, tea.Cmd) {
 	switch msg.String() {
 	case "enter", "esc":
-		if p.InstallResult.Err == nil {
+		if p.InstallErr == nil {
 			p.clearSelection()
 		}
 
@@ -291,16 +301,6 @@ func (p *Packages) updateResult(
 	}
 
 	return screens.Packages, nil
-}
-
-func (p *Packages) install(packages []string) tea.Cmd {
-	return func() tea.Msg {
-		result := p.Installer.Install(packages)
-
-		return installFinishedMsg{
-			Result: result,
-		}
-	}
 }
 
 func (p *Packages) toggleSelectedPackage() {
@@ -407,14 +407,19 @@ func (p *Packages) browserView(t theme.Theme) string {
 
 	body := lipgloss.JoinHorizontal(
 		lipgloss.Top,
+
 		lipgloss.NewStyle().
 			Width(28).
 			Render(left),
+
 		" "+divider+" ",
+
 		lipgloss.NewStyle().
 			Width(28).
 			Render(middle),
+
 		" "+divider+" ",
+
 		lipgloss.NewStyle().
 			Width(30).
 			Render(right),
@@ -482,10 +487,13 @@ func (p *Packages) confirmView(t theme.Theme) string {
 
 	body := lipgloss.JoinHorizontal(
 		lipgloss.Top,
+
 		lipgloss.NewStyle().
 			Width(48).
 			Render(queue),
+
 		" "+t.Styles.Muted.Render("│")+" ",
+
 		lipgloss.NewStyle().
 			Width(40).
 			Render(summary),
@@ -521,20 +529,6 @@ func (p *Packages) installingView(t theme.Theme) string {
 		),
 	)
 
-	body := lipgloss.JoinVertical(
-		lipgloss.Left,
-		t.Styles.Highlight.Render("Installation in progress"),
-		t.Styles.Muted.Render(strings.Repeat("─", 42)),
-		"",
-		t.Styles.Normal.Render(
-			"Homebrew is installing the selected packages.",
-		),
-		"",
-		t.Styles.Muted.Render(
-			"Please wait. Daedalus will update when installation finishes.",
-		),
-	)
-
 	installFooter := footer.New(
 		footer.Action{
 			Key:         "Ctrl+C",
@@ -544,20 +538,20 @@ func (p *Packages) installingView(t theme.Theme) string {
 
 	return layout.New(
 		pageHeader.View(t),
-		body,
+		p.Install.View(t),
 		installFooter.View(t),
 	).View()
 }
 
 func (p *Packages) resultView(t theme.Theme) string {
-	success := p.InstallResult.Err == nil
+	success := p.InstallErr == nil
 
 	title := "✓ Installation Complete"
 	subtitle := "Selected packages installed successfully"
 
 	if !success {
 		title = "Installation Failed"
-		subtitle = p.InstallResult.Err.Error()
+		subtitle = p.InstallErr.Error()
 	}
 
 	pageHeader := header.New(
@@ -565,10 +559,10 @@ func (p *Packages) resultView(t theme.Theme) string {
 		subtitle,
 	)
 
-	output := p.InstallResult.Output
+	output := "Installation finished."
 
-	if output == "" {
-		output = "No installer output."
+	if len(p.Install.Lines) > 0 {
+		output = strings.Join(p.Install.Lines, "\n")
 	}
 
 	body := lipgloss.JoinVertical(

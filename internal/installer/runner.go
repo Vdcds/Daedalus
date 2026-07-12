@@ -1,11 +1,14 @@
 // Package installer provides software installation backends.
 package installer
 
-type Result struct {
-	Output string
-	Err    error
+import "io"
+
+type Process interface {
+	Stdout() io.ReadCloser
+	Stderr() io.ReadCloser
+	Wait() error
 }
 
 type Runner interface {
-	Install(packages []string) Result
+	Start(packages []string) (Process, error)
 }
