@@ -13,6 +13,7 @@ type Item struct {
 	ID          string
 	Title       string
 	Description string
+	Marked      bool
 }
 
 type List struct {
@@ -49,6 +50,7 @@ func (l List) View(t theme.Theme) string {
 		selected := i == l.Selected
 
 		cursor := "  "
+		marker := "  "
 		titleStyle := t.Styles.Normal
 
 		if selected {
@@ -56,15 +58,19 @@ func (l List) View(t theme.Theme) string {
 			titleStyle = t.Styles.Title
 		}
 
+		if item.Marked {
+			marker = t.Styles.Highlight.Render("✓ ")
+		}
+
 		out = append(
 			out,
-			cursor+titleStyle.Render(item.Title),
+			cursor+marker+titleStyle.Render(item.Title),
 		)
 
 		if item.Description != "" {
 			out = append(
 				out,
-				"   "+t.Styles.Muted.Render(item.Description),
+				"     "+t.Styles.Muted.Render(item.Description),
 			)
 		}
 

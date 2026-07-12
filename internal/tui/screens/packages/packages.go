@@ -35,6 +35,8 @@ type Packages struct {
 	PackageList  list.List
 	FocusedPane  Pane
 
+	Selected map[string]bool
+
 	Preview *preview.Preview
 	Footer  *footer.Footer
 }
@@ -53,7 +55,10 @@ func menuItems() []list.Item {
 	return items
 }
 
-func packageItems(category catalog.Category) []list.Item {
+func packageItems(
+	category catalog.Category,
+	selected map[string]bool,
+) []list.Item {
 	items := make([]list.Item, 0, len(category.Packages))
 
 	for _, pkg := range category.Packages {
@@ -61,6 +66,7 @@ func packageItems(category catalog.Category) []list.Item {
 			ID:          pkg.BrewName,
 			Title:       pkg.Name,
 			Description: pkg.Description,
+			Marked:      selected[pkg.BrewName],
 		})
 	}
 
@@ -91,6 +97,8 @@ func New() *Packages {
 	s := search.New("Search packages...")
 	s.Focus()
 
+	selected := make(map[string]bool)
+
 	return &Packages{
 		Header: header.New(
 			"📦 Packages",
@@ -104,10 +112,15 @@ func New() *Packages {
 		},
 
 		PackageList: list.List{
-			Items: packageItems(catalog.Categories[0]),
+			Items: packageItems(
+				catalog.Categories[0],
+				selected,
+			),
 		},
 
 		FocusedPane: CategoryPane,
+
+		Selected: selected,
 
 		Preview: preview.New(
 			"",
@@ -126,8 +139,12 @@ func New() *Packages {
 				Description: "Switch pane",
 			},
 			footer.Action{
+				Key:         "Space",
+				Description: "Select",
+			},
+			footer.Action{
 				Key:         "Enter",
-				Description: "Open",
+				Description: "Install",
 			},
 			footer.Action{
 				Key:         "Esc",
@@ -160,7 +177,10 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 			if before != p.CategoryList.Selected {
 				selectedCategory := catalog.Categories[p.CategoryList.Selected]
 
-				p.PackageList.Items = packageItems(selectedCategory)
+				p.PackageList.Items = packageItems(
+					selectedCategory,
+					p.Selected,
+				)
 				p.PackageList.Selected = 0
 			}
 
@@ -168,8 +188,26 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 			p.PackageList.Update(msg)
 		}
 
+	case " ":
+		if p.FocusedPane == PackagePane {
+			item := p.PackageList.SelectedItem()
+
+			if item.ID != "" {
+				p.Selected[item.ID] = !p.Selected[item.ID]
+
+				selectedCategory := catalog.Categories[p.CategoryList.Selected]
+				currentSelection := p.PackageList.Selected
+
+				p.PackageList.Items = packageItems(
+					selectedCategory,
+					p.Selected,
+				)
+				p.PackageList.Selected = currentSelection
+			}
+		}
+
 	case "enter":
-		// Package actions come next.
+		// Installation comes next.
 	}
 
 	return screens.Packages
@@ -183,11 +221,20 @@ func (p *Packages) View(t theme.Theme) string {
 
 	p.Preview.Title = selectedPackage.Name
 	p.Preview.Body = selectedPackage.Description
-	p.Preview.Meta = fmt.Sprintf(
-		"brew install %s",
-		selectedPackage.BrewName,
+
+	if p.Selected[selectedPackage.BrewName] {
+		p.Preview.Meta = "✓ Selected for installation"
+	} else {
+		p.Preview.Meta = fmt.Sprintf(
+			"brew install %s",
+			selectedPackage.BrewName,
+		)
+	}
+
+	p.Preview.Footer = fmt.Sprintf(
+		"%d selected · Space to toggle",
+		selectedCount(p.Selected),
 	)
-	p.Preview.Footer = "Press Enter to install."
 
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -241,4 +288,16 @@ func (p *Packages) View(t theme.Theme) string {
 		body,
 		p.Footer.View(t),
 	).View()
+}
+
+func selectedCount(selected map[string]bool) int {
+	count := 0
+
+	for _, marked := range selected {
+		if marked {
+			count++
+		}
+	}
+
+	return count
 }
