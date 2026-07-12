@@ -20,12 +20,20 @@ import (
 	"github.com/vdcds/Daedalus/internal/tui/theme"
 )
 
+type Pane int
+
+const (
+	CategoryPane Pane = iota
+	PackagePane
+)
+
 type Packages struct {
 	Header *header.Header
 	Search *search.Search
 
 	CategoryList list.List
 	PackageList  list.List
+	FocusedPane  Pane
 
 	Preview *preview.Preview
 	Footer  *footer.Footer
@@ -72,12 +80,15 @@ func New() *Packages {
 		Search: s,
 
 		CategoryList: list.List{
-			Items: menuItems(),
+			Items:   menuItems(),
+			Focused: true,
 		},
 
 		PackageList: list.List{
 			Items: packageItems(catalog.Categories[0]),
 		},
+
+		FocusedPane: CategoryPane,
 
 		Preview: preview.New(
 			"",
@@ -110,20 +121,33 @@ func New() *Packages {
 func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 	p.Search.Update(msg)
 
-	before := p.CategoryList.Selected
-
-	p.CategoryList.Update(msg)
-
-	if before != p.CategoryList.Selected {
-		selected := catalog.Categories[p.CategoryList.Selected]
-
-		p.PackageList.Items = packageItems(selected)
-		p.PackageList.Selected = 0
-	}
-
 	switch msg.String() {
 	case "esc":
 		return screens.Home
+
+	case "left":
+		p.FocusedPane = CategoryPane
+
+	case "right":
+		p.FocusedPane = PackagePane
+
+	case "up", "down":
+		switch p.FocusedPane {
+		case CategoryPane:
+			before := p.CategoryList.Selected
+
+			p.CategoryList.Update(msg)
+
+			if before != p.CategoryList.Selected {
+				selectedCategory := catalog.Categories[p.CategoryList.Selected]
+
+				p.PackageList.Items = packageItems(selectedCategory)
+				p.PackageList.Selected = 0
+			}
+
+		case PackagePane:
+			p.PackageList.Update(msg)
+		}
 
 	case "enter":
 		// Package actions come next.
@@ -134,6 +158,9 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 
 func (p *Packages) View(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
+
+	p.CategoryList.Focused = p.FocusedPane == CategoryPane
+	p.PackageList.Focused = p.FocusedPane == PackagePane
 
 	selectedCategory := catalog.Categories[p.CategoryList.Selected]
 	selectedPackage := selectedCategory.Packages[p.PackageList.Selected]
@@ -148,7 +175,6 @@ func (p *Packages) View(t theme.Theme) string {
 
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
-
 		t.Styles.Highlight.Render("Categories"),
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
@@ -157,7 +183,6 @@ func (p *Packages) View(t theme.Theme) string {
 
 	middle := lipgloss.JoinVertical(
 		lipgloss.Left,
-
 		t.Styles.Highlight.Render("Packages"),
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
@@ -166,7 +191,6 @@ func (p *Packages) View(t theme.Theme) string {
 
 	right := lipgloss.JoinVertical(
 		lipgloss.Left,
-
 		t.Styles.Highlight.Render("Preview"),
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
@@ -177,19 +201,14 @@ func (p *Packages) View(t theme.Theme) string {
 
 	body := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-
 		lipgloss.NewStyle().
 			Width(28).
 			Render(left),
-
 		" "+divider+" ",
-
 		lipgloss.NewStyle().
 			Width(28).
 			Render(middle),
-
 		" "+divider+" ",
-
 		lipgloss.NewStyle().
 			Width(30).
 			Render(right),

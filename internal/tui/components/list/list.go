@@ -18,32 +18,36 @@ type Item struct {
 type List struct {
 	Items    []Item
 	Selected int
+	Focused  bool
 }
 
-func (m *List) Update(msg tea.KeyMsg) {
+func (l *List) Update(msg tea.KeyMsg) {
 	switch msg.String() {
-
 	case "up":
-		if m.Selected > 0 {
-			m.Selected--
+		if l.Selected > 0 {
+			l.Selected--
 		}
 
 	case "down":
-		if m.Selected < len(m.Items)-1 {
-			m.Selected++
+		if l.Selected < len(l.Items)-1 {
+			l.Selected++
 		}
 	}
 }
 
-func (m List) SelectedItem() Item {
-	return m.Items[m.Selected]
+func (l List) SelectedItem() Item {
+	if len(l.Items) == 0 {
+		return Item{}
+	}
+
+	return l.Items[l.Selected]
 }
 
-func (m List) View(t theme.Theme) string {
+func (l List) View(t theme.Theme) string {
 	var out []string
 
-	for i, item := range m.Items {
-		selected := i == m.Selected
+	for i, item := range l.Items {
+		selected := i == l.Selected && l.Focused
 
 		cursor := "  "
 		titleStyle := t.Styles.Normal
@@ -53,17 +57,19 @@ func (m List) View(t theme.Theme) string {
 			titleStyle = t.Styles.Title
 		}
 
-		out = append(out,
+		out = append(
+			out,
 			cursor+titleStyle.Render(item.Title),
 		)
 
 		if item.Description != "" {
-			out = append(out,
+			out = append(
+				out,
 				"   "+t.Styles.Muted.Render(item.Description),
 			)
 		}
 
-		if i != len(m.Items)-1 {
+		if i != len(l.Items)-1 {
 			out = append(out, "")
 		}
 	}
