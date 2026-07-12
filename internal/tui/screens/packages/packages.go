@@ -80,8 +80,7 @@ func New() *Packages {
 		Search: s,
 
 		CategoryList: list.List{
-			Items:   menuItems(),
-			Focused: true,
+			Items: menuItems(),
 		},
 
 		PackageList: list.List{
@@ -158,9 +157,6 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 
 func (p *Packages) View(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
-
-	p.CategoryList.Focused = p.FocusedPane == CategoryPane
-	p.PackageList.Focused = p.FocusedPane == PackagePane
 
 	selectedCategory := catalog.Categories[p.CategoryList.Selected]
 	selectedPackage := selectedCategory.Packages[p.PackageList.Selected]

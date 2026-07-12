@@ -18,7 +18,6 @@ type Item struct {
 type List struct {
 	Items    []Item
 	Selected int
-	Focused  bool
 }
 
 func (l *List) Update(msg tea.KeyMsg) {
@@ -47,7 +46,7 @@ func (l List) View(t theme.Theme) string {
 	var out []string
 
 	for i, item := range l.Items {
-		selected := i == l.Selected && l.Focused
+		selected := i == l.Selected
 
 		cursor := "  "
 		titleStyle := t.Styles.Normal
