@@ -2,6 +2,7 @@ package install
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"sync"
 
@@ -15,21 +16,34 @@ type lineMsg struct {
 	Line string
 }
 
-type finishedMsg struct {
+type packageFinishedMsg struct {
+	Package string
+	Err     error
+}
+
+type readyMsg struct{}
+
+type FinishedMsg struct {
 	Err error
+}
+
+type PackageResult struct {
+	Name string
+	Err  error
 }
 
 type Model struct {
 	Spinner spinner.Model
+	Lines   []string
 
-	Lines []string
+	Packages  []string
+	Current   int
+	Completed []PackageResult
 
-	process installer.Process
+	runner installer.Runner
 
 	lines chan string
 	done  chan error
-
-	started bool
 }
 
 func New() *Model {
@@ -37,8 +51,9 @@ func New() *Model {
 	s.Spinner = spinner.Dot
 
 	return &Model{
-		Spinner: s,
-		Lines:   make([]string, 0, 32),
+		Spinner:   s,
+		Lines:     make([]string, 0, 32),
+		Completed: make([]PackageResult, 0),
 	}
 }
 
@@ -46,22 +61,37 @@ func (m *Model) Start(
 	runner installer.Runner,
 	packages []string,
 ) tea.Cmd {
+	m.runner = runner
+	m.Packages = append([]string(nil), packages...)
+	m.Current = 0
+	m.Completed = nil
+	m.Lines = nil
+
+	return m.startCurrent()
+}
+
+func (m *Model) startCurrent() tea.Cmd {
+	if m.Current >= len(m.Packages) {
+		return m.finish()
+	}
+
+	pkg := m.Packages[m.Current]
+
 	return func() tea.Msg {
-		process, err := runner.Start(packages)
+		process, err := m.runner.Start([]string{pkg})
 		if err != nil {
-			return finishedMsg{
-				Err: err,
+			return packageFinishedMsg{
+				Package: pkg,
+				Err:     err,
 			}
 		}
 
-		m.process = process
 		m.lines = make(chan string, 64)
 		m.done = make(chan error, 1)
-		m.started = true
 
 		go m.readProcess(process)
 
-		return lineMsg{}
+		return readyMsg{}
 	}
 }
 
@@ -100,6 +130,8 @@ func scan(
 }
 
 func (m *Model) waitForOutput() tea.Cmd {
+	pkg := m.Packages[m.Current]
+
 	return func() tea.Msg {
 		line, ok := <-m.lines
 
@@ -109,8 +141,32 @@ func (m *Model) waitForOutput() tea.Cmd {
 			}
 		}
 
-		return finishedMsg{
-			Err: <-m.done,
+		return packageFinishedMsg{
+			Package: pkg,
+			Err:     <-m.done,
 		}
+	}
+}
+
+func (m *Model) finish() tea.Cmd {
+	return func() tea.Msg {
+		var failed []string
+
+		for _, result := range m.Completed {
+			if result.Err != nil {
+				failed = append(failed, result.Name)
+			}
+		}
+
+		if len(failed) > 0 {
+			return FinishedMsg{
+				Err: fmt.Errorf(
+					"%d package(s) failed to install",
+					len(failed),
+				),
+			}
+		}
+
+		return FinishedMsg{}
 	}
 }

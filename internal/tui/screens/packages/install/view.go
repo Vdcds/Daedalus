@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -9,12 +10,33 @@ import (
 )
 
 func (m *Model) View(t theme.Theme) string {
+	currentPackage := "Preparing installation"
+
+	if m.Current < len(m.Packages) {
+		currentPackage = m.Packages[m.Current]
+	}
+
 	status := lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		t.Styles.Highlight.Render(m.Spinner.View()),
 		" ",
-		t.Styles.Title.Render("Homebrew is installing packages"),
+		t.Styles.Title.Render(
+			fmt.Sprintf(
+				"Installing %s",
+				currentPackage,
+			),
+		),
 	)
+
+	progress := t.Styles.Muted.Render(
+		fmt.Sprintf(
+			"%d of %d packages completed",
+			len(m.Completed),
+			len(m.Packages),
+		),
+	)
+
+	results := m.resultsView(t)
 
 	logs := "Waiting for Homebrew output..."
 
@@ -25,9 +47,42 @@ func (m *Model) View(t theme.Theme) string {
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		status,
+		progress,
+		"",
+		results,
 		"",
 		t.Styles.Muted.Render(strings.Repeat("─", 72)),
 		"",
 		t.Styles.Normal.Render(logs),
 	)
+}
+
+func (m *Model) resultsView(t theme.Theme) string {
+	if len(m.Completed) == 0 {
+		return t.Styles.Muted.Render(
+			"No packages completed yet.",
+		)
+	}
+
+	var rows []string
+
+	for _, result := range m.Completed {
+		if result.Err != nil {
+			rows = append(
+				rows,
+				t.Styles.Muted.Render("✗")+" "+
+					t.Styles.Normal.Render(result.Name),
+			)
+
+			continue
+		}
+
+		rows = append(
+			rows,
+			t.Styles.Highlight.Render("✓")+" "+
+				t.Styles.Normal.Render(result.Name),
+		)
+	}
+
+	return strings.Join(rows, "\n")
 }
