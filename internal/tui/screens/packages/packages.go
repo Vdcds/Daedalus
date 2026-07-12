@@ -21,11 +21,14 @@ import (
 )
 
 type Packages struct {
-	Header       *header.Header
-	Search       *search.Search
+	Header *header.Header
+	Search *search.Search
+
 	CategoryList list.List
-	Preview      *preview.Preview
-	Footer       *footer.Footer
+	PackageList  list.List
+
+	Preview *preview.Preview
+	Footer  *footer.Footer
 }
 
 func menuItems() []list.Item {
@@ -36,6 +39,20 @@ func menuItems() []list.Item {
 			ID:          category.ID,
 			Title:       category.Name,
 			Description: category.Description,
+		})
+	}
+
+	return items
+}
+
+func packageItems(category catalog.Category) []list.Item {
+	items := make([]list.Item, 0, len(category.Packages))
+
+	for _, pkg := range category.Packages {
+		items = append(items, list.Item{
+			ID:          pkg.BrewName,
+			Title:       pkg.Name,
+			Description: pkg.Description,
 		})
 	}
 
@@ -56,6 +73,10 @@ func New() *Packages {
 
 		CategoryList: list.List{
 			Items: menuItems(),
+		},
+
+		PackageList: list.List{
+			Items: packageItems(catalog.Categories[0]),
 		},
 
 		Preview: preview.New(
@@ -84,7 +105,17 @@ func New() *Packages {
 
 func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 	p.Search.Update(msg)
+
+	before := p.CategoryList.Selected
+
 	p.CategoryList.Update(msg)
+
+	if before != p.CategoryList.Selected {
+		selected := catalog.Categories[p.CategoryList.Selected]
+
+		p.PackageList.Items = packageItems(selected)
+		p.PackageList.Selected = 0
+	}
 
 	switch msg.String() {
 
@@ -92,7 +123,7 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 		return screens.Home
 
 	case "enter":
-		// Category navigation comes later.
+		// Package browser comes next.
 	}
 
 	return screens.Packages
