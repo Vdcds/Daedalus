@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/vdcds/Daedalus/internal/catalog"
+	"github.com/vdcds/Daedalus/internal/installer"
 
 	"github.com/vdcds/Daedalus/internal/tui/components/footer"
 	"github.com/vdcds/Daedalus/internal/tui/components/header"
@@ -32,7 +33,13 @@ type Mode int
 const (
 	BrowseMode Mode = iota
 	ConfirmMode
+	InstallingMode
+	ResultMode
 )
+
+type installFinishedMsg struct {
+	Result installer.Result
+}
 
 type Packages struct {
 	Header *header.Header
@@ -45,8 +52,12 @@ type Packages struct {
 	Selected map[string]bool
 	Mode     Mode
 
+	InstallResult installer.Result
+
 	Preview *preview.Preview
 	Footer  *footer.Footer
+
+	Installer installer.Runner
 }
 
 func menuItems() []list.Item {
@@ -160,27 +171,52 @@ func New() *Packages {
 				Description: "Back",
 			},
 		),
+
+		Installer: installer.NewHomebrew(),
 	}
 }
 
-func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
-	if p.Mode == ConfirmMode {
-		switch msg.String() {
-		case "esc":
-			p.Mode = BrowseMode
+func (p *Packages) Update(msg tea.Msg) (screens.Screen, tea.Cmd) {
+	switch msg := msg.(type) {
+	case installFinishedMsg:
+		p.InstallResult = msg.Result
+		p.Mode = ResultMode
 
-		case "enter":
-			// Installer execution comes next.
-		}
+		return screens.Packages, nil
 
-		return screens.Packages
+	case tea.KeyMsg:
+		return p.updateKey(msg)
 	}
 
+	return screens.Packages, nil
+}
+
+func (p *Packages) updateKey(
+	msg tea.KeyMsg,
+) (screens.Screen, tea.Cmd) {
+	switch p.Mode {
+	case ConfirmMode:
+		return p.updateConfirm(msg)
+
+	case InstallingMode:
+		return screens.Packages, nil
+
+	case ResultMode:
+		return p.updateResult(msg)
+
+	default:
+		return p.updateBrowser(msg)
+	}
+}
+
+func (p *Packages) updateBrowser(
+	msg tea.KeyMsg,
+) (screens.Screen, tea.Cmd) {
 	p.Search.Update(msg)
 
 	switch msg.String() {
 	case "esc":
-		return screens.Home
+		return screens.Home, nil
 
 	case "left":
 		p.FocusedPane = CategoryPane
@@ -202,6 +238,7 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 					selectedCategory,
 					p.Selected,
 				)
+
 				p.PackageList.Selected = 0
 			}
 
@@ -211,20 +248,7 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 
 	case " ":
 		if p.FocusedPane == PackagePane {
-			item := p.PackageList.SelectedItem()
-
-			if item.ID != "" {
-				p.Selected[item.ID] = !p.Selected[item.ID]
-
-				selectedCategory := catalog.Categories[p.CategoryList.Selected]
-				currentSelection := p.PackageList.Selected
-
-				p.PackageList.Items = packageItems(
-					selectedCategory,
-					p.Selected,
-				)
-				p.PackageList.Selected = currentSelection
-			}
+			p.toggleSelectedPackage()
 		}
 
 	case "enter":
@@ -233,15 +257,97 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 		}
 	}
 
-	return screens.Packages
+	return screens.Packages, nil
+}
+
+func (p *Packages) updateConfirm(
+	msg tea.KeyMsg,
+) (screens.Screen, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		p.Mode = BrowseMode
+
+	case "enter":
+		p.Mode = InstallingMode
+
+		packages := p.selectedBrewNames()
+
+		return screens.Packages, p.install(packages)
+	}
+
+	return screens.Packages, nil
+}
+
+func (p *Packages) updateResult(
+	msg tea.KeyMsg,
+) (screens.Screen, tea.Cmd) {
+	switch msg.String() {
+	case "enter", "esc":
+		if p.InstallResult.Err == nil {
+			p.clearSelection()
+		}
+
+		p.Mode = BrowseMode
+	}
+
+	return screens.Packages, nil
+}
+
+func (p *Packages) install(packages []string) tea.Cmd {
+	return func() tea.Msg {
+		result := p.Installer.Install(packages)
+
+		return installFinishedMsg{
+			Result: result,
+		}
+	}
+}
+
+func (p *Packages) toggleSelectedPackage() {
+	item := p.PackageList.SelectedItem()
+
+	if item.ID == "" {
+		return
+	}
+
+	p.Selected[item.ID] = !p.Selected[item.ID]
+
+	selectedCategory := catalog.Categories[p.CategoryList.Selected]
+	currentSelection := p.PackageList.Selected
+
+	p.PackageList.Items = packageItems(
+		selectedCategory,
+		p.Selected,
+	)
+
+	p.PackageList.Selected = currentSelection
+}
+
+func (p *Packages) clearSelection() {
+	p.Selected = make(map[string]bool)
+
+	selectedCategory := catalog.Categories[p.CategoryList.Selected]
+
+	p.PackageList.Items = packageItems(
+		selectedCategory,
+		p.Selected,
+	)
 }
 
 func (p *Packages) View(t theme.Theme) string {
-	if p.Mode == ConfirmMode {
+	switch p.Mode {
+	case ConfirmMode:
 		return p.confirmView(t)
-	}
 
-	return p.browserView(t)
+	case InstallingMode:
+		return p.installingView(t)
+
+	case ResultMode:
+		return p.resultView(t)
+
+	default:
+		return p.browserView(t)
+	}
 }
 
 func (p *Packages) browserView(t theme.Theme) string {
@@ -324,7 +430,7 @@ func (p *Packages) browserView(t theme.Theme) string {
 func (p *Packages) confirmView(t theme.Theme) string {
 	count := selectedCount(p.Selected)
 
-	header := header.New(
+	pageHeader := header.New(
 		"📦 Confirm Installation",
 		fmt.Sprintf(
 			"%d package%s selected",
@@ -397,9 +503,97 @@ func (p *Packages) confirmView(t theme.Theme) string {
 	)
 
 	return layout.New(
-		header.View(t),
+		pageHeader.View(t),
 		body,
 		confirmFooter.View(t),
+	).View()
+}
+
+func (p *Packages) installingView(t theme.Theme) string {
+	count := selectedCount(p.Selected)
+
+	pageHeader := header.New(
+		"📦 Installing",
+		fmt.Sprintf(
+			"Installing %d package%s",
+			count,
+			plural(count),
+		),
+	)
+
+	body := lipgloss.JoinVertical(
+		lipgloss.Left,
+		t.Styles.Highlight.Render("Installation in progress"),
+		t.Styles.Muted.Render(strings.Repeat("─", 42)),
+		"",
+		t.Styles.Normal.Render(
+			"Homebrew is installing the selected packages.",
+		),
+		"",
+		t.Styles.Muted.Render(
+			"Please wait. Daedalus will update when installation finishes.",
+		),
+	)
+
+	installFooter := footer.New(
+		footer.Action{
+			Key:         "Ctrl+C",
+			Description: "Quit",
+		},
+	)
+
+	return layout.New(
+		pageHeader.View(t),
+		body,
+		installFooter.View(t),
+	).View()
+}
+
+func (p *Packages) resultView(t theme.Theme) string {
+	success := p.InstallResult.Err == nil
+
+	title := "✓ Installation Complete"
+	subtitle := "Selected packages installed successfully"
+
+	if !success {
+		title = "Installation Failed"
+		subtitle = p.InstallResult.Err.Error()
+	}
+
+	pageHeader := header.New(
+		title,
+		subtitle,
+	)
+
+	output := p.InstallResult.Output
+
+	if output == "" {
+		output = "No installer output."
+	}
+
+	body := lipgloss.JoinVertical(
+		lipgloss.Left,
+		t.Styles.Highlight.Render("Homebrew Output"),
+		t.Styles.Muted.Render(strings.Repeat("─", 72)),
+		"",
+		t.Styles.Normal.Render(output),
+	)
+
+	resultFooter := footer.New(
+		footer.Action{
+			Key:         "Enter",
+			Description: "Continue",
+		},
+		footer.Action{
+			Key:         "Esc",
+			Description: "Back",
+		},
+	)
+
+	return layout.New(
+		pageHeader.View(t),
+		body,
+		resultFooter.View(t),
 	).View()
 }
 
