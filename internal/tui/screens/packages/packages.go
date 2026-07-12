@@ -27,6 +27,13 @@ const (
 	PackagePane
 )
 
+type Mode int
+
+const (
+	BrowseMode Mode = iota
+	ConfirmMode
+)
+
 type Packages struct {
 	Header *header.Header
 	Search *search.Search
@@ -36,6 +43,7 @@ type Packages struct {
 	FocusedPane  Pane
 
 	Selected map[string]bool
+	Mode     Mode
 
 	Preview *preview.Preview
 	Footer  *footer.Footer
@@ -121,6 +129,7 @@ func New() *Packages {
 		FocusedPane: CategoryPane,
 
 		Selected: selected,
+		Mode:     BrowseMode,
 
 		Preview: preview.New(
 			"",
@@ -155,6 +164,18 @@ func New() *Packages {
 }
 
 func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
+	if p.Mode == ConfirmMode {
+		switch msg.String() {
+		case "esc":
+			p.Mode = BrowseMode
+
+		case "enter":
+			// Installer execution comes next.
+		}
+
+		return screens.Packages
+	}
+
 	p.Search.Update(msg)
 
 	switch msg.String() {
@@ -207,13 +228,23 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 		}
 
 	case "enter":
-		// Installation comes next.
+		if selectedCount(p.Selected) > 0 {
+			p.Mode = ConfirmMode
+		}
 	}
 
 	return screens.Packages
 }
 
 func (p *Packages) View(t theme.Theme) string {
+	if p.Mode == ConfirmMode {
+		return p.confirmView(t)
+	}
+
+	return p.browserView(t)
+}
+
+func (p *Packages) browserView(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
 
 	selectedCategory := catalog.Categories[p.CategoryList.Selected]
@@ -290,6 +321,102 @@ func (p *Packages) View(t theme.Theme) string {
 	).View()
 }
 
+func (p *Packages) confirmView(t theme.Theme) string {
+	count := selectedCount(p.Selected)
+
+	header := header.New(
+		"📦 Confirm Installation",
+		fmt.Sprintf(
+			"%d package%s selected",
+			count,
+			plural(count),
+		),
+	)
+
+	var packages []string
+
+	for _, category := range catalog.Categories {
+		for _, pkg := range category.Packages {
+			if !p.Selected[pkg.BrewName] {
+				continue
+			}
+
+			packages = append(
+				packages,
+				t.Styles.Highlight.Render("✓")+" "+
+					t.Styles.Title.Render(pkg.Name)+"\n"+
+					"  "+t.Styles.Muted.Render(pkg.Description),
+			)
+		}
+	}
+
+	queue := lipgloss.JoinVertical(
+		lipgloss.Left,
+		t.Styles.Highlight.Render("Install Queue"),
+		t.Styles.Muted.Render(strings.Repeat("─", 42)),
+		"",
+		strings.Join(packages, "\n\n"),
+	)
+
+	command := fmt.Sprintf(
+		"brew install %s",
+		strings.Join(p.selectedBrewNames(), " "),
+	)
+
+	summary := lipgloss.JoinVertical(
+		lipgloss.Left,
+		t.Styles.Muted.Render("Command"),
+		"",
+		t.Styles.Normal.Render(command),
+		"",
+		t.Styles.Muted.Render(
+			"Review the selected packages before installation.",
+		),
+	)
+
+	body := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		lipgloss.NewStyle().
+			Width(48).
+			Render(queue),
+		" "+t.Styles.Muted.Render("│")+" ",
+		lipgloss.NewStyle().
+			Width(40).
+			Render(summary),
+	)
+
+	confirmFooter := footer.New(
+		footer.Action{
+			Key:         "Enter",
+			Description: "Confirm",
+		},
+		footer.Action{
+			Key:         "Esc",
+			Description: "Cancel",
+		},
+	)
+
+	return layout.New(
+		header.View(t),
+		body,
+		confirmFooter.View(t),
+	).View()
+}
+
+func (p *Packages) selectedBrewNames() []string {
+	var names []string
+
+	for _, category := range catalog.Categories {
+		for _, pkg := range category.Packages {
+			if p.Selected[pkg.BrewName] {
+				names = append(names, pkg.BrewName)
+			}
+		}
+	}
+
+	return names
+}
+
 func selectedCount(selected map[string]bool) int {
 	count := 0
 
@@ -300,4 +427,12 @@ func selectedCount(selected map[string]bool) int {
 	}
 
 	return count
+}
+
+func plural(count int) string {
+	if count == 1 {
+		return ""
+	}
+
+	return "s"
 }
