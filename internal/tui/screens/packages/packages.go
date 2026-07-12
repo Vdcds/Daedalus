@@ -92,6 +92,10 @@ func New() *Packages {
 				Description: "Navigate",
 			},
 			footer.Action{
+				Key:         "←→",
+				Description: "Switch pane",
+			},
+			footer.Action{
 				Key:         "Enter",
 				Description: "Open",
 			},
@@ -118,12 +122,11 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 	}
 
 	switch msg.String() {
-
 	case "esc":
 		return screens.Home
 
 	case "enter":
-		// Package browser comes next.
+		// Package actions come next.
 	}
 
 	return screens.Packages
@@ -132,15 +135,16 @@ func (p *Packages) Update(msg tea.KeyMsg) screens.Screen {
 func (p *Packages) View(t theme.Theme) string {
 	p.Header.SetRight(p.Search.View(t))
 
-	selected := catalog.Categories[p.CategoryList.Selected]
+	selectedCategory := catalog.Categories[p.CategoryList.Selected]
+	selectedPackage := selectedCategory.Packages[p.PackageList.Selected]
 
-	p.Preview.Title = selected.Name
-	p.Preview.Body = selected.Description
+	p.Preview.Title = selectedPackage.Name
+	p.Preview.Body = selectedPackage.Description
 	p.Preview.Meta = fmt.Sprintf(
-		"%d packages",
-		len(selected.Packages),
+		"brew install %s",
+		selectedPackage.BrewName,
 	)
-	p.Preview.Footer = "Press Enter to browse packages."
+	p.Preview.Footer = "Press Enter to install."
 
 	left := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -149,6 +153,15 @@ func (p *Packages) View(t theme.Theme) string {
 		t.Styles.Muted.Render(strings.Repeat("─", 18)),
 		"",
 		p.CategoryList.View(t),
+	)
+
+	middle := lipgloss.JoinVertical(
+		lipgloss.Left,
+
+		t.Styles.Highlight.Render("Packages"),
+		t.Styles.Muted.Render(strings.Repeat("─", 18)),
+		"",
+		p.PackageList.View(t),
 	)
 
 	right := lipgloss.JoinVertical(
@@ -160,10 +173,27 @@ func (p *Packages) View(t theme.Theme) string {
 		p.Preview.View(t),
 	)
 
-	body := layout.NewSplit(
-		left,
-		right,
-	).View(t)
+	divider := t.Styles.Muted.Render("│")
+
+	body := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+
+		lipgloss.NewStyle().
+			Width(28).
+			Render(left),
+
+		" "+divider+" ",
+
+		lipgloss.NewStyle().
+			Width(28).
+			Render(middle),
+
+		" "+divider+" ",
+
+		lipgloss.NewStyle().
+			Width(30).
+			Render(right),
+	)
 
 	return layout.New(
 		p.Header.View(t),
