@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 )
 
 type Homebrew struct{}
@@ -46,6 +47,56 @@ func (h *Homebrew) Start(packages []string) (Process, error) {
 		stdout: stdout,
 		stderr: stderr,
 	}, nil
+}
+
+func (h *Homebrew) Installed() (map[string]bool, error) {
+	installed := make(map[string]bool)
+
+	if err := collectInstalled(
+		installed,
+		"list",
+		"--formula",
+		"-1",
+	); err != nil {
+		return nil, fmt.Errorf(
+			"list installed formulae: %w",
+			err,
+		)
+	}
+
+	if err := collectInstalled(
+		installed,
+		"list",
+		"--cask",
+		"-1",
+	); err != nil {
+		return nil, fmt.Errorf(
+			"list installed casks: %w",
+			err,
+		)
+	}
+
+	return installed, nil
+}
+
+func collectInstalled(
+	installed map[string]bool,
+	args ...string,
+) error {
+	cmd := exec.Command("brew", args...)
+
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	for _, name := range strings.Fields(
+		string(output),
+	) {
+		installed[name] = true
+	}
+
+	return nil
 }
 
 func (p *homebrewProcess) Stdout() io.ReadCloser {

@@ -34,5 +34,5 @@ func NewApp() *App {
 }
 
 func (a *App) Init() tea.Cmd {
-	return nil
+	return a.packages.LoadInstalled()
 }

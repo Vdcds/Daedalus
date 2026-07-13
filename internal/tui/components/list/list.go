@@ -14,6 +14,7 @@ type Item struct {
 	Title       string
 	Description string
 	Marked      bool
+	Installed   bool
 }
 
 type List struct {
@@ -58,8 +59,12 @@ func (l List) View(t theme.Theme) string {
 			titleStyle = t.Styles.Title
 		}
 
-		if item.Marked {
-			marker = t.Styles.Highlight.Render("✓ ")
+		switch {
+		case item.Installed:
+			marker = t.Styles.Muted.Render("✓ ")
+
+		case item.Marked:
+			marker = t.Styles.Highlight.Render("◆ ")
 		}
 
 		out = append(
@@ -70,7 +75,10 @@ func (l List) View(t theme.Theme) string {
 		if item.Description != "" {
 			out = append(
 				out,
-				"     "+t.Styles.Muted.Render(item.Description),
+				"     "+
+					t.Styles.Muted.Render(
+						item.Description,
+					),
 			)
 		}
 

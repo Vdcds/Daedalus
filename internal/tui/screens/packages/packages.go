@@ -38,6 +38,11 @@ const (
 	ResultMode
 )
 
+type installedMsg struct {
+	Packages map[string]bool
+	Err      error
+}
+
 type Packages struct {
 	Header *header.Header
 	Search *search.Search
@@ -46,8 +51,9 @@ type Packages struct {
 	PackageList  list.List
 	FocusedPane  Pane
 
-	Selected map[string]bool
-	Mode     Mode
+	Selected  map[string]bool
+	Installed map[string]bool
+	Mode      Mode
 
 	Install    *install.Model
 	InstallErr error
@@ -81,6 +87,7 @@ func menuItems() []list.Item {
 func packageItems(
 	category catalog.Category,
 	selected map[string]bool,
+	installed map[string]bool,
 ) []list.Item {
 	items := make(
 		[]list.Item,
@@ -96,6 +103,7 @@ func packageItems(
 				Title:       pkg.Name,
 				Description: pkg.Description,
 				Marked:      selected[pkg.BrewName],
+				Installed:   installed[pkg.BrewName],
 			},
 		)
 	}
@@ -130,6 +138,7 @@ func New() *Packages {
 	s.Focus()
 
 	selected := make(map[string]bool)
+	installed := make(map[string]bool)
 
 	return &Packages{
 		Header: header.New(
@@ -147,13 +156,15 @@ func New() *Packages {
 			Items: packageItems(
 				catalog.Categories[0],
 				selected,
+				installed,
 			),
 		},
 
 		FocusedPane: CategoryPane,
 
-		Selected: selected,
-		Mode:     BrowseMode,
+		Selected:  selected,
+		Installed: installed,
+		Mode:      BrowseMode,
 
 		Install:   install.New(),
 		Installer: installer.NewHomebrew(),
@@ -190,15 +201,35 @@ func New() *Packages {
 	}
 }
 
+func (p *Packages) LoadInstalled() tea.Cmd {
+	return func() tea.Msg {
+		installed, err := p.Installer.Installed()
+
+		return installedMsg{
+			Packages: installed,
+			Err:      err,
+		}
+	}
+}
+
 func (p *Packages) Update(
 	msg tea.Msg,
 ) (screens.Screen, tea.Cmd) {
 	switch msg := msg.(type) {
+	case installedMsg:
+		if msg.Err == nil {
+			p.Installed = msg.Packages
+			p.removeInstalledSelections()
+			p.refreshPackageList()
+		}
+
+		return screens.Packages, nil
+
 	case install.FinishedMsg:
 		p.InstallErr = msg.Err
 		p.Mode = ResultMode
 
-		return screens.Packages, nil
+		return screens.Packages, p.LoadInstalled()
 	}
 
 	if p.Mode == InstallingMode {
@@ -252,15 +283,8 @@ func (p *Packages) updateBrowser(
 			p.CategoryList.Update(msg)
 
 			if before != p.CategoryList.Selected {
-				selectedCategory :=
-					catalog.Categories[p.CategoryList.Selected]
-
-				p.PackageList.Items = packageItems(
-					selectedCategory,
-					p.Selected,
-				)
-
 				p.PackageList.Selected = 0
+				p.refreshPackageList()
 			}
 
 		case PackagePane:
@@ -329,8 +353,16 @@ func (p *Packages) toggleSelectedPackage() {
 		return
 	}
 
+	if p.Installed[item.ID] {
+		return
+	}
+
 	p.Selected[item.ID] = !p.Selected[item.ID]
 
+	p.refreshPackageList()
+}
+
+func (p *Packages) refreshPackageList() {
 	selectedCategory :=
 		catalog.Categories[p.CategoryList.Selected]
 
@@ -339,21 +371,33 @@ func (p *Packages) toggleSelectedPackage() {
 	p.PackageList.Items = packageItems(
 		selectedCategory,
 		p.Selected,
+		p.Installed,
 	)
 
+	if len(p.PackageList.Items) == 0 {
+		p.PackageList.Selected = 0
+		return
+	}
+
+	if currentSelection >= len(p.PackageList.Items) {
+		currentSelection = len(p.PackageList.Items) - 1
+	}
+
 	p.PackageList.Selected = currentSelection
+}
+
+func (p *Packages) removeInstalledSelections() {
+	for name := range p.Selected {
+		if p.Installed[name] {
+			delete(p.Selected, name)
+		}
+	}
 }
 
 func (p *Packages) clearSelection() {
 	p.Selected = make(map[string]bool)
 
-	selectedCategory :=
-		catalog.Categories[p.CategoryList.Selected]
-
-	p.PackageList.Items = packageItems(
-		selectedCategory,
-		p.Selected,
-	)
+	p.refreshPackageList()
 }
 
 func (p *Packages) View(
@@ -390,10 +434,14 @@ func (p *Packages) browserView(
 	p.Preview.Title = selectedPackage.Name
 	p.Preview.Body = selectedPackage.Description
 
-	if p.Selected[selectedPackage.BrewName] {
-		p.Preview.Meta =
-			"✓ Selected for installation"
-	} else {
+	switch {
+	case p.Installed[selectedPackage.BrewName]:
+		p.Preview.Meta = "✓ Installed"
+
+	case p.Selected[selectedPackage.BrewName]:
+		p.Preview.Meta = "◆ Selected for installation"
+
+	default:
 		p.Preview.Meta = fmt.Sprintf(
 			"brew install %s",
 			selectedPackage.BrewName,
@@ -477,24 +525,13 @@ func (p *Packages) confirmView(
 
 	var packages []string
 
-	for _, category := range catalog.Categories {
-		for _, pkg := range category.Packages {
-			if !p.Selected[pkg.BrewName] {
-				continue
-			}
-
-			packages = append(
-				packages,
-				t.Styles.Highlight.Render("✓")+
-					" "+
-					t.Styles.Title.Render(pkg.Name)+
-					"\n"+
-					"  "+
-					t.Styles.Muted.Render(
-						pkg.Description,
-					),
-			)
-		}
+	for _, job := range p.selectedJobs() {
+		packages = append(
+			packages,
+			t.Styles.Highlight.Render("◆")+
+				" "+
+				t.Styles.Title.Render(job.Name),
+		)
 	}
 
 	queue := lipgloss.JoinVertical(
@@ -651,6 +688,10 @@ func (p *Packages) selectedJobs() []install.Job {
 	for _, category := range catalog.Categories {
 		for _, pkg := range category.Packages {
 			if !p.Selected[pkg.BrewName] {
+				continue
+			}
+
+			if p.Installed[pkg.BrewName] {
 				continue
 			}
 

@@ -11,4 +11,5 @@ type Process interface {
 
 type Runner interface {
 	Start(packages []string) (Process, error)
+	Installed() (map[string]bool, error)
 }
